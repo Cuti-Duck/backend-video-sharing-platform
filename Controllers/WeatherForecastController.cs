@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using video_sharing_platform.Models;
 
 namespace video_sharing_platform.Controllers
 {

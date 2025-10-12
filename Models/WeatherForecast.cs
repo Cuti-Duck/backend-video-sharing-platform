@@ -1,4 +1,4 @@
-namespace video_sharing_platform
+namespace video_sharing_platform.Models
 {
     public class WeatherForecast
     {
