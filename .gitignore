@@ -1,0 +1,86 @@
+# ===========================
+# .NET & Clean Architecture
+# ===========================
+
+# Build results
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+logs/
+out/
+TestResults/
+
+# User-specific files
+*.user
+*.userosscache
+*.suo
+*.sln.docstates
+
+# Visual Studio Code
+.vs/
+.vscode/
+.history/
+.idea/
+*.code-workspace
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# NuGet
+*.nupkg
+*.snupkg
+project.lock.json
+artifacts/
+
+# Entity Framework
+Migrations/
+*.dbmdl
+*.mdf
+*.ldf
+
+# Docker
+docker-compose.override.yml
+*.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# AWS / Azure / Secrets
+aws.json
+*.pubxml
+*.publishsettings
+secrets.json
+appsettings.*.json
+
+# Build tools
+node_modules/
+coverage/
+*.pidb
+*.svclog
+
+# Test & reports
+*.coverage
+*.coveragexml
+test-results/
+coverage-results/
+reports/
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# Temporary
+*.tmp
+*.temp
+*.bak
+*.log
+
+# Clean Arch structure
+Infrastructure/Persistence/*local.db
+
+# Docker artifacts
+**/Dockerfile
+**/docker-compose.yml
+**/docker-compose.override.yml
