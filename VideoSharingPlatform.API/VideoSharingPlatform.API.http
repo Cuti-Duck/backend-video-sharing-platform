@@ -1,0 +1,6 @@
+@VideoSharingPlatform.API_HostAddress = http://localhost:5209
+
+GET {{VideoSharingPlatform.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
