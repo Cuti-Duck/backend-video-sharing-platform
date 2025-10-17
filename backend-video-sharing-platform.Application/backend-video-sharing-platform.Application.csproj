@@ -13,7 +13,10 @@
 
   <ItemGroup>
     <Folder Include="Features\" />
-    <Folder Include="Interface\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="12.0.0" />
   </ItemGroup>
 
 </Project>
