@@ -1,27 +1,21 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using backend_video_sharing_platform.Application.DTOs.Auth;
+﻿using backend_video_sharing_platform.Application.DTOs.Auth;
 using backend_video_sharing_platform.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
-namespace backend_video_sharing_platform.Controllers
+namespace backend_video_sharing_platform.API.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
     public sealed class AuthController : ControllerBase
     {
         private readonly ICognitoAuthService _auth;
-
-        public AuthController(ICognitoAuthService auth)
-        {
-            _auth = auth;
-        }
+        public AuthController(ICognitoAuthService auth) => _auth = auth;
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterUserRequest request, CancellationToken ct)
         {
-    
             if (!ModelState.IsValid) return ValidationProblem(ModelState);
-
             var result = await _auth.RegisterAsync(request, ct);
             return result.Success ? Ok(result) : BadRequest(result);
         }
@@ -29,9 +23,6 @@ namespace backend_video_sharing_platform.Controllers
         [HttpPost("confirm")]
         public async Task<IActionResult> Confirm([FromBody] ConfirmSignUpRequest request, CancellationToken ct)
         {
-            if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Code))
-                return BadRequest(new { message = "Email and Code are required." });
-
             var result = await _auth.ConfirmSignUpAsync(request, ct);
             return result.Success ? Ok(result) : BadRequest(result);
         }
@@ -39,9 +30,6 @@ namespace backend_video_sharing_platform.Controllers
         [HttpPost("resend-code")]
         public async Task<IActionResult> ResendCode([FromBody] string email, CancellationToken ct)
         {
-            if (string.IsNullOrWhiteSpace(email))
-                return BadRequest(new { message = "Email is required." });
-
             var result = await _auth.ResendConfirmationCodeAsync(email, ct);
             return result.Success ? Ok(result) : BadRequest(result);
         }
@@ -50,11 +38,25 @@ namespace backend_video_sharing_platform.Controllers
         public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken ct)
         {
             var result = await _auth.LoginAsync(request, ct);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
 
-            if (!result.Success)
-                return BadRequest(result);
+        [Authorize]
+        [HttpGet("validate-token")]
+        public IActionResult ValidateToken()
+        {
+            // Lấy toàn bộ claims từ token
+            var claims = User.Claims.Select(c => new
+            {
+                Type = c.Type,
+                Value = c.Value
+            }).ToList();
 
-            return Ok(result);
+            return Ok(new
+            {
+                Message = "Token hợp lệ — Đây là danh sách claims từ AWS Cognito:",
+                Claims = claims
+            });
         }
     }
 }

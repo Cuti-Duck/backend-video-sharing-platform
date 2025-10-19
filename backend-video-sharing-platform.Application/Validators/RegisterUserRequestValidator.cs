@@ -1,6 +1,8 @@
 ﻿using FluentValidation;
 using backend_video_sharing_platform.Application.DTOs.Auth;
 using System.Globalization;
+using System.Text.RegularExpressions;
+
 namespace backend_video_sharing_platform.Application.Validators
 {
     public class RegisterUserRequestValidator : AbstractValidator<RegisterUserRequest>
@@ -18,17 +20,15 @@ namespace backend_video_sharing_platform.Application.Validators
                 .Matches("[0-9]").WithMessage("Password must contain at least one number.")
                 .Matches("[^a-zA-Z0-9]").WithMessage("Password must contain at least one special character.");
 
-            RuleFor(x => x.Name)
-                .NotEmpty().MaximumLength(100);
+            RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
 
             RuleFor(x => x.BirthDate)
                 .NotEmpty()
-                .Must(d => DateTime.TryParseExact(d, "yyyy-MM-dd", CultureInfo.InvariantCulture,
-                        DateTimeStyles.None, out _))
+                .Must(d => DateTime.TryParseExact(d, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
                 .WithMessage("BirthDate must be yyyy-MM-dd.");
 
             RuleFor(x => x.PhoneNumber)
-                .Must(p => string.IsNullOrWhiteSpace(p) || System.Text.RegularExpressions.Regex.IsMatch(p, @"^\+?\d{9,15}$"))
+                .Must(p => string.IsNullOrWhiteSpace(p) || Regex.IsMatch(p, @"^\+?\d{9,15}$"))
                 .WithMessage("PhoneNumber must be E.164 format (e.g. +84901234567).");
         }
     }

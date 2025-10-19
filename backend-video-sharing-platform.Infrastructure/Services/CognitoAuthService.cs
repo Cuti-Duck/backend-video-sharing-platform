@@ -1,18 +1,19 @@
-﻿using Amazon;
-using Amazon.CognitoIdentityProvider;
+﻿using Amazon.CognitoIdentityProvider;
 using Amazon.CognitoIdentityProvider.Model;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using backend_video_sharing_platform.Application.DTOs.Auth;
 using backend_video_sharing_platform.Application.Interfaces;
-using System.Diagnostics.CodeAnalysis;
-using DtoConfirmSignUpRequest = backend_video_sharing_platform.Application.DTOs.Auth.ConfirmSignUpRequest;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using System.Security.Cryptography;
+using System.Text;
 
+// Alias để tránh trùng tên DTO vs SDK
+using ConfirmSignUpRequestModel = Amazon.CognitoIdentityProvider.Model.ConfirmSignUpRequest;
+using DTOConfirmSignUpRequest = backend_video_sharing_platform.Application.DTOs.Auth.ConfirmSignUpRequest;
 
 namespace backend_video_sharing_platform.Infrastructure.Services
 {
-    [ExcludeFromCodeCoverage]
-    public sealed class CognitoAuthService : ICognitoAuthService
+    public class CognitoAuthService : ICognitoAuthService
     {
         private readonly IAmazonCognitoIdentityProvider _provider;
         private readonly IConfiguration _cfg;
@@ -28,38 +29,48 @@ namespace backend_video_sharing_platform.Infrastructure.Services
             _logger = logger;
         }
 
-        /// <summary>
-        /// Đăng ký tài khoản mới vào Cognito User Pool.
-        /// </summary>
+        private string GenerateSecretHash(string username)
+        {
+            var clientId = _cfg["AWS:Cognito:ClientId"];
+            var clientSecret = _cfg["AWS:Cognito:ClientSecret"];
+            using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(clientSecret));
+            var data = Encoding.UTF8.GetBytes(username + clientId);
+            return Convert.ToBase64String(hmac.ComputeHash(data));
+        }
+
+        private static string ToE164(string phone)
+        {
+            if (string.IsNullOrWhiteSpace(phone)) return string.Empty;
+            var p = phone.Trim();
+            if (p.StartsWith("+")) return p;
+            if (p.StartsWith("0")) return "+84" + p.TrimStart('0'); // Việt Nam
+            return "+" + p;
+        }
+
         public async Task<RegisterUserResponse> RegisterAsync(RegisterUserRequest request, CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(request.Email))
-                return new RegisterUserResponse { Success = false, Message = "Email is required." };
-            if (!request.Email.Contains("@"))
-                return new RegisterUserResponse { Success = false, Message = "Invalid email format." };
-
             try
             {
-                var e164 = NormalizePhone(request.PhoneNumber);
-
-                var signUp = new SignUpRequest
+                var attrs = new List<AttributeType>
                 {
-                    ClientId = _cfg["AWS:Cognito:ClientId"],
-                    Username = request.Email,
-                    Password = request.Password,
-                    UserAttributes = new List<AttributeType>
-                    {
-                        new AttributeType { Name = "email", Value = request.Email },
-                        new AttributeType { Name = "name", Value = request.Name },
-                        new AttributeType { Name = "gender", Value = string.IsNullOrWhiteSpace(request.Gender) ? "unspecified" : request.Gender },
-                        new AttributeType { Name = "birthdate", Value = request.BirthDate }
-                    }
+                    new AttributeType { Name = "email", Value = request.Email },
+                    new AttributeType { Name = "name", Value = request.Name },
+                    new AttributeType { Name = "gender", Value = request.Gender },
+                    new AttributeType { Name = "birthdate", Value = request.BirthDate }
                 };
 
-                if (!string.IsNullOrWhiteSpace(e164))
-                    signUp.UserAttributes.Add(new AttributeType { Name = "phone_number", Value = e164 });
+                var phone = ToE164(request.PhoneNumber);
+                if (!string.IsNullOrWhiteSpace(phone))
+                    attrs.Add(new AttributeType { Name = "phone_number", Value = phone });
 
-                var resp = await _provider.SignUpAsync(signUp, ct);
+                var resp = await _provider.SignUpAsync(new SignUpRequest
+                {
+                    ClientId = _cfg["AWS:Cognito:ClientId"],
+                    SecretHash = GenerateSecretHash(request.Email),
+                    Username = request.Email,
+                    Password = request.Password,
+                    UserAttributes = attrs
+                }, ct);
 
                 return new RegisterUserResponse
                 {
@@ -77,39 +88,26 @@ namespace backend_video_sharing_platform.Infrastructure.Services
             {
                 return new RegisterUserResponse { Success = false, Message = $"Weak password: {ex.Message}" };
             }
-            catch (InvalidLambdaResponseException ex)
-            {
-                _logger.LogError(ex, "Lambda trigger error during signup for {Email}", request.Email);
-                return new RegisterUserResponse { Success = false, Message = "Internal signup trigger error." };
-            }
-            catch (InvalidParameterException ex)
-            {
-                _logger.LogWarning(ex, "Invalid parameter during signup for {Email}", request.Email);
-                return new RegisterUserResponse { Success = false, Message = "Invalid input or attribute mismatch." };
-            }
-            catch (TooManyRequestsException)
-            {
-                return new RegisterUserResponse { Success = false, Message = "Too many requests. Please try again later." };
-            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error during signup for {Email}", request.Email);
+                _logger.LogError(ex, "Register error for {Email}", request.Email);
                 return new RegisterUserResponse { Success = false, Message = "Registration failed. Please try again." };
             }
         }
 
-        public async Task<BasicResponse> ConfirmSignUpAsync(DtoConfirmSignUpRequest request, CancellationToken ct = default)
+        public async Task<BasicResponse> ConfirmSignUpAsync(DTOConfirmSignUpRequest request, CancellationToken ct = default)
         {
             try
             {
-                await _provider.ConfirmSignUpAsync(new Amazon.CognitoIdentityProvider.Model.ConfirmSignUpRequest
+                var confirmReq = new ConfirmSignUpRequestModel
                 {
                     ClientId = _cfg["AWS:Cognito:ClientId"],
+                    SecretHash = GenerateSecretHash(request.Email),
                     Username = request.Email,
                     ConfirmationCode = request.Code
-                }, ct);
+                };
 
-
+                await _provider.ConfirmSignUpAsync(confirmReq, ct);
                 return new BasicResponse { Success = true, Message = "Email verified successfully." };
             }
             catch (CodeMismatchException)
@@ -120,13 +118,9 @@ namespace backend_video_sharing_platform.Infrastructure.Services
             {
                 return new BasicResponse { Success = false, Message = "Verification code expired." };
             }
-            catch (UserNotFoundException)
-            {
-                return new BasicResponse { Success = false, Message = "User not found." };
-            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Confirm signup error for {Email}", request.Email);
+                _logger.LogError(ex, "Confirm error for {Email}", request.Email);
                 return new BasicResponse { Success = false, Message = "Confirm failed. Please try again." };
             }
         }
@@ -138,6 +132,7 @@ namespace backend_video_sharing_platform.Infrastructure.Services
                 await _provider.ResendConfirmationCodeAsync(new ResendConfirmationCodeRequest
                 {
                     ClientId = _cfg["AWS:Cognito:ClientId"],
+                    SecretHash = GenerateSecretHash(email),
                     Username = email
                 }, ct);
 
@@ -154,15 +149,6 @@ namespace backend_video_sharing_platform.Infrastructure.Services
             }
         }
 
-        private static string NormalizePhone(string phone)
-        {
-            if (string.IsNullOrWhiteSpace(phone)) return string.Empty;
-            var p = phone.Trim();
-            if (p.StartsWith("+")) return p;
-            if (p.StartsWith("0")) return "+84" + p.TrimStart('0');
-            return "+" + p;
-        }
-
         public async Task<LoginResponse> LoginAsync(LoginRequest request, CancellationToken ct = default)
         {
             try
@@ -174,25 +160,21 @@ namespace backend_video_sharing_platform.Infrastructure.Services
                     AuthParameters = new Dictionary<string, string>
                     {
                         { "USERNAME", request.Email },
-                        { "PASSWORD", request.Password }
+                        { "PASSWORD", request.Password },
+                        { "SECRET_HASH", GenerateSecretHash(request.Email) }
                     }
                 };
 
                 var resp = await _provider.InitiateAuthAsync(authReq, ct);
 
-                if (resp.AuthenticationResult != null)
+                return new LoginResponse
                 {
-                    return new LoginResponse
-                    {
-                        Success = true,
-                        Message = "Login successful.",
-                        AccessToken = resp.AuthenticationResult.AccessToken,
-                        IdToken = resp.AuthenticationResult.IdToken,
-                        RefreshToken = resp.AuthenticationResult.RefreshToken
-                    };
-                }
-
-                return new LoginResponse { Success = false, Message = "Authentication failed." };
+                    Success = true,
+                    Message = "Login successful.",
+                    AccessToken = resp.AuthenticationResult.AccessToken,
+                    IdToken = resp.AuthenticationResult.IdToken,
+                    RefreshToken = resp.AuthenticationResult.RefreshToken
+                };
             }
             catch (UserNotConfirmedException)
             {
@@ -201,10 +183,6 @@ namespace backend_video_sharing_platform.Infrastructure.Services
             catch (NotAuthorizedException)
             {
                 return new LoginResponse { Success = false, Message = "Invalid email or password." };
-            }
-            catch (UserNotFoundException)
-            {
-                return new LoginResponse { Success = false, Message = "User does not exist." };
             }
             catch (Exception ex)
             {

@@ -7,22 +7,8 @@ namespace backend_video_sharing_platform.Application.Validators
     {
         public LoginRequestValidator()
         {
-            RuleFor(x => x)
-                .Must(x => IsValidCredentials(x.Email, x.Password))
-                .WithMessage("Email or password is incorrect");
-        }
-
-        private bool IsValidCredentials(string email, string password)
-        {
-            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
-                return false;
-
-            
-            if (!email.Contains("@"))
-                return false;
-
-            
-            return password.Length >= 8;
+            RuleFor(x => x.Email).NotEmpty().EmailAddress();
+            RuleFor(x => x.Password).NotEmpty().MinimumLength(8);
         }
     }
 }
