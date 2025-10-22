@@ -8,6 +8,11 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Amazon.DynamoDBv2;
+using Amazon.IVS;
+using backend_video_sharing_platform.Infrastructure.Services;
+using backend_video_sharing_platform.Application.Interfaces;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -67,6 +72,9 @@ builder.Services.AddAuthorization();
 builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());
 builder.Services.AddAWSService<IAmazonCognitoIdentityProvider>();
 builder.Services.AddScoped<ICognitoAuthService, CognitoAuthService>();
+builder.Services.AddAWSService<IAmazonIVS>();
+builder.Services.AddAWSService<IAmazonDynamoDB>();
+builder.Services.AddScoped<IIVSService, IVSService>();
 
 // Swagger Configuration with JWT
 builder.Services.AddEndpointsApiExplorer();
