@@ -1,35 +1,15 @@
-﻿using Amazon.DynamoDBv2.DataModel;
-
-namespace backend_video_sharing_platform.Domain.Entities
+﻿namespace backend_video_sharing_platform.Application.DTOs.User
 {
-    [DynamoDBTable("Users")]
-    public class User
+    public class UserResponse
     {
-        [DynamoDBHashKey("userId")]
         public string UserId { get; set; } = string.Empty;
-
-        [DynamoDBProperty("email")]
         public string Email { get; set; } = string.Empty;
-
-        [DynamoDBProperty("name")]
         public string Name { get; set; } = string.Empty;
-
-        [DynamoDBProperty("gender")]
         public string Gender { get; set; } = string.Empty;
-
-        [DynamoDBProperty("birthDate")]
         public string BirthDate { get; set; } = string.Empty;
-
-        [DynamoDBProperty("phoneNumber")]
         public string PhoneNumber { get; set; } = string.Empty;
-
-        [DynamoDBProperty("avatarUrl")]
         public string? AvatarUrl { get; set; }
-
-        [DynamoDBProperty("channelId")]
         public string? ChannelId { get; set; }
-
-        [DynamoDBProperty("createdAt")]
         public string CreatedAt { get; set; } = string.Empty;
     }
 }

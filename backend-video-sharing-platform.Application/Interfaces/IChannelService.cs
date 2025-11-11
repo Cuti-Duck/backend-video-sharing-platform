@@ -1,0 +1,11 @@
+﻿using backend_video_sharing_platform.Application.DTOs.Channel;
+
+namespace backend_video_sharing_platform.Application.Interfaces
+{
+    public interface IChannelService
+    {
+        Task<bool> UpdateChannelNameByUserIdAsync(string userId, string newName);
+        Task<ChannelResponse?> GetChannelByIdAsync(string channelId, CancellationToken ct = default);
+        Task<bool> UpdateDescriptionAsync(string userId, string description, CancellationToken ct = default);
+    }
+}
