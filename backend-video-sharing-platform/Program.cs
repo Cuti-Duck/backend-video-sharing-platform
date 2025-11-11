@@ -20,8 +20,8 @@ using Amazon.S3;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+//var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+//builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 // Configure file upload limits
 builder.Services.Configure<FormOptions>(options =>
@@ -158,7 +158,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Video Sharing Platform API V1");
-        c.RoutePrefix = string.Empty;
     });
 }
 else
