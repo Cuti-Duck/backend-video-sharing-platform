@@ -1,17 +1,21 @@
 ﻿using Amazon.CognitoIdentityProvider;
+using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.DataModel;
+using Amazon.IVS;
 using backend_video_sharing_platform.Application.Interfaces;
+using backend_video_sharing_platform.Application.Interfaces;
+using backend_video_sharing_platform.Application.Services;
 using backend_video_sharing_platform.Application.Validators;
+using backend_video_sharing_platform.Infrastructure.Repositories;
+using backend_video_sharing_platform.Infrastructure.Services;
 using backend_video_sharing_platform.Infrastructure.Services;
 using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Amazon.DynamoDBv2;
-using Amazon.IVS;
-using backend_video_sharing_platform.Infrastructure.Services;
-using backend_video_sharing_platform.Application.Interfaces;
+using Amazon.S3;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -71,10 +75,26 @@ builder.Services.AddAuthorization();
 // AWS Services
 builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());
 builder.Services.AddAWSService<IAmazonCognitoIdentityProvider>();
-builder.Services.AddScoped<ICognitoAuthService, CognitoAuthService>();
 builder.Services.AddAWSService<IAmazonIVS>();
 builder.Services.AddAWSService<IAmazonDynamoDB>();
+builder.Services.AddAWSService<IAmazonS3>(); 
+
+
+builder.Services.AddScoped<IDynamoDBContext, DynamoDBContext>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IChannelRepository, ChannelRepository>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IChannelService, ChannelService>();
+builder.Services.AddScoped<IStorageService, S3StorageService>();
+builder.Services.AddScoped<ICognitoAuthService, CognitoAuthService>();
 builder.Services.AddScoped<IIVSService, IVSService>();
+builder.Services.AddScoped<IChannelService, ChannelService>();
+
+
+
+
+
+
 
 // Swagger Configuration with JWT
 builder.Services.AddEndpointsApiExplorer();

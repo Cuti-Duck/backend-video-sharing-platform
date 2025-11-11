@@ -9,27 +9,56 @@ namespace backend_video_sharing_platform.Application.Validators
     {
         public RegisterUserRequestValidator()
         {
+            // Email — bắt buộc, đúng format
             RuleFor(x => x.Email)
-                .NotEmpty().WithMessage("Email is required.")
-                .EmailAddress().WithMessage("Invalid email format.");
+                .NotEmpty().WithMessage("Email không được để trống.")
+                .EmailAddress().WithMessage("Email không hợp lệ.");
 
+            // Password — bắt buộc, đủ mạnh
             RuleFor(x => x.Password)
-                .NotEmpty().MinimumLength(8)
-                .Matches("[A-Z]").WithMessage("Password must contain at least one uppercase letter.")
-                .Matches("[a-z]").WithMessage("Password must contain at least one lowercase letter.")
-                .Matches("[0-9]").WithMessage("Password must contain at least one number.")
-                .Matches("[^a-zA-Z0-9]").WithMessage("Password must contain at least one special character.");
+                .NotEmpty().WithMessage("Mật khẩu không được để trống.")
+                .MinimumLength(8).WithMessage("Mật khẩu phải có ít nhất 8 ký tự.")
+                .Matches("[A-Z]").WithMessage("Mật khẩu phải chứa ít nhất 1 chữ in hoa.")
+                .Matches("[a-z]").WithMessage("Mật khẩu phải chứa ít nhất 1 chữ thường.")
+                .Matches("[0-9]").WithMessage("Mật khẩu phải chứa ít nhất 1 số.")
+                .Matches("[^a-zA-Z0-9]").WithMessage("Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt.");
 
-            RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
+            // Name — bắt buộc, không quá dài
+            RuleFor(x => x.Name)
+                .NotEmpty().WithMessage("Tên không được để trống.")
+                .MaximumLength(50).WithMessage("Tên không được vượt quá 50 ký tự.");
 
+            // Gender — chỉ male hoặc female
+            RuleFor(x => x.Gender)
+                .Must(g => string.IsNullOrEmpty(g)
+                    || g.Equals("male", StringComparison.OrdinalIgnoreCase)
+                    || g.Equals("female", StringComparison.OrdinalIgnoreCase))
+                .WithMessage("Giới tính chỉ được là 'male' hoặc 'female'.");
+
+            // BirthDate — đúng định dạng yyyy-MM-dd
             RuleFor(x => x.BirthDate)
-                .NotEmpty()
-                .Must(d => DateTime.TryParseExact(d, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
-                .WithMessage("BirthDate must be yyyy-MM-dd.");
+                .NotEmpty().WithMessage("Ngày sinh không được để trống.")
+                .Must(BeValidDateFormat)
+                .WithMessage("Ngày sinh phải có định dạng yyyy-MM-dd.");
 
+            // PhoneNumber — đúng format quốc tế (E.164)
             RuleFor(x => x.PhoneNumber)
                 .Must(p => string.IsNullOrWhiteSpace(p) || Regex.IsMatch(p, @"^\+?\d{9,15}$"))
-                .WithMessage("PhoneNumber must be E.164 format (e.g. +84901234567).");
+                .WithMessage("Số điện thoại phải đúng định dạng E.164 (vd: +84901234567).");
+        }
+
+        private bool BeValidDateFormat(string? date)
+        {
+            if (string.IsNullOrEmpty(date))
+                return true;
+
+            return DateTime.TryParseExact(
+                date,
+                "yyyy-MM-dd",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out _
+            );
         }
     }
 }
