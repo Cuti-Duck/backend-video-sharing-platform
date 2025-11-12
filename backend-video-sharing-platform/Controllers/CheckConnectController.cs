@@ -1,4 +1,5 @@
 ﻿using Amazon.DynamoDBv2;
+using Amazon.S3;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend_video_sharing_platform.Controllers
@@ -9,11 +10,13 @@ namespace backend_video_sharing_platform.Controllers
     {
         private readonly ILogger<CheckConnectController> _logger;
         private readonly IAmazonDynamoDB _dynamoDbClient;
+        private readonly IAmazonS3 _s3Client;
 
-        public CheckConnectController(ILogger<CheckConnectController> logger, IAmazonDynamoDB dynamoDbClient)
+        public CheckConnectController(ILogger<CheckConnectController> logger, IAmazonDynamoDB dynamoDbClient, IAmazonS3 s3client)
         {
             _logger = logger;
             _dynamoDbClient = dynamoDbClient;
+            _s3Client = s3client;
         }
 
         [HttpGet("pingDynamoDB")]
@@ -37,6 +40,29 @@ namespace backend_video_sharing_platform.Controllers
             catch (Exception ex)
             {
                 _logger.LogError($"Error pinging DynamoDB: {ex.Message}");
+                return false;
+            }
+        }
+
+        [HttpGet("pingS3")]
+
+        public async Task<bool> PingS3()
+        {
+            try
+            {
+                _logger.LogInformation("Pinging S3...");
+                var response = await _s3Client.ListBucketsAsync(); // Placeholder for actual S3 call
+                if (response.Buckets != null && response.Buckets.Count >= 0)
+                {
+                    _logger.LogInformation($"S3 ping successful, found {response.Buckets.Count} buckets.");
+                    return true;
+                }
+                _logger.LogWarning("S3 ping returned no buckets.");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error pinging S3: {ex.Message}");
                 return false;
             }
         }
