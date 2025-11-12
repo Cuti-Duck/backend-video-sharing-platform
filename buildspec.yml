@@ -21,13 +21,11 @@ phases:
     commands:
       - echo Building the Docker image for .NET API...
       - docker build -t $REPO_NAME:$IMAGE_TAG -f backend-video-sharing-platform/Dockerfile .
-      - docker tag $REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG
       - docker tag $REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:latest 
 
   post_build:
     commands:
       - echo Pushing Docker image to Amazon ECR...
-      - docker push $REPOSITORY_URI:$IMAGE_TAG
       - docker push $REPOSITORY_URI:latest
       - echo Writing imagedefinitions.json for CodePipeline/App Runner...
       - printf '[{"name":"%s","imageUri":"%s"}]' "$REPO_NAME" "$REPOSITORY_URI:$IMAGE_TAG" > imagedefinitions.json
