@@ -89,6 +89,8 @@ builder.Services.AddScoped<IStorageService, S3StorageService>();
 builder.Services.AddScoped<ICognitoAuthService, CognitoAuthService>();
 builder.Services.AddScoped<IIVSService, IVSService>();
 builder.Services.AddScoped<IChannelService, ChannelService>();
+builder.Services.AddScoped<IVideoService, VideoService>();
+builder.Services.AddScoped<IVideoRepository, VideoRepository>();
 
 
 
