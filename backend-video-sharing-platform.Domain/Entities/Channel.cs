@@ -26,7 +26,7 @@ namespace backend_video_sharing_platform.Domain.Entities
         [DynamoDBProperty("createdAt")]
         public string CreatedAt { get; set; } = string.Empty;
 
-        // 🧩 Các trường bổ sung cho livestream IVS
+        
         [DynamoDBProperty("channelArn")]
         public string? ChannelArn { get; set; }
 
