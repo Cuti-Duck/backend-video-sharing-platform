@@ -1,8 +1,12 @@
-﻿using backend_video_sharing_platform.Application.DTOs;
+﻿using System.Security.Claims;
+using AutoMapper;
+using backend_video_sharing_platform.Application.Common.Exceptions;
+using backend_video_sharing_platform.Application.DTOs;
+using backend_video_sharing_platform.Application.DTOs.Video;
 using backend_video_sharing_platform.Application.Interfaces;
+using backend_video_sharing_platform.Models.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace backend_video_sharing_platform.Api.Controllers
 {
@@ -11,10 +15,12 @@ namespace backend_video_sharing_platform.Api.Controllers
     public class VideoController : ControllerBase
     {
         private readonly IVideoService _videoService;
+        private readonly IMapper _mapper;
 
-        public VideoController(IVideoService videoService)
+        public VideoController(IVideoService videoService, IMapper mapper)
         {
             _videoService = videoService;
+            _mapper = mapper;
         }
 
         [HttpPost("presign")]
@@ -47,5 +53,50 @@ namespace backend_video_sharing_platform.Api.Controllers
             var videos = await _videoService.GetVideosByChannelIdAsync(channelId);
             return Ok(videos);
         }
+
+        [Authorize]
+        [HttpPost("{videoId}/thumbnail")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadThumbnail(
+    string videoId,
+    [FromForm] UploadThumbnailRequest request,
+    CancellationToken ct)
+        {
+            if (request.Thumbnail == null || request.Thumbnail.Length == 0)
+                throw new BadRequestException("Vui lòng chọn file thumbnail.");
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                       ?? User.FindFirstValue("sub");
+
+            if (string.IsNullOrEmpty(userId))
+                throw new UnauthorizedAccessException("Không tìm thấy userId trong token.");
+
+            await using var stream = request.Thumbnail.OpenReadStream();
+
+            await _videoService.UploadThumbnailAsync(
+                videoId,
+                userId,
+                stream,
+                request.Thumbnail.FileName,
+                request.Thumbnail.ContentType,
+                ct
+            );
+
+            return Ok(new { message = "Upload thumbnail thành công." });
+        }
+
+        [HttpGet("{videoId}")]
+        public async Task<IActionResult> GetVideoById(string videoId)
+        {
+            var video = await _videoService.GetVideoByIdAsync(videoId);
+
+            if (video == null)
+                return NotFound(new { message = "Video không tồn tại." });
+
+            var response = _mapper.Map<VideoResponse>(video);
+
+            return Ok(response);
+        }
+
     }
 }
