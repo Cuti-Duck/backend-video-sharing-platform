@@ -2,20 +2,24 @@
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DataModel;
 using Amazon.IVS;
+using Amazon.S3;
 using backend_video_sharing_platform.Application.Interfaces;
 using backend_video_sharing_platform.Application.Interfaces;
+using backend_video_sharing_platform.Application.Mapping;
 using backend_video_sharing_platform.Application.Services;
 using backend_video_sharing_platform.Application.Validators;
 using backend_video_sharing_platform.Infrastructure.Repositories;
 using backend_video_sharing_platform.Infrastructure.Services;
 using backend_video_sharing_platform.Infrastructure.Services;
+using backend_video_sharing_platform.Middlewares;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Amazon.S3;
+using backend_video_sharing_platform.Application.Mapping;
+
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -80,7 +84,8 @@ builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());
 builder.Services.AddAWSService<IAmazonCognitoIdentityProvider>();
 builder.Services.AddAWSService<IAmazonIVS>();
 builder.Services.AddAWSService<IAmazonDynamoDB>();
-builder.Services.AddAWSService<IAmazonS3>(); 
+builder.Services.AddAWSService<IAmazonS3>();
+builder.Services.AddAutoMapper(typeof(VideoMappingProfile));
 
 
 builder.Services.AddScoped<IDynamoDBContext, DynamoDBContext>();
@@ -94,6 +99,12 @@ builder.Services.AddScoped<IIVSService, IVSService>();
 builder.Services.AddScoped<IChannelService, ChannelService>();
 builder.Services.AddScoped<IVideoService, VideoService>();
 builder.Services.AddScoped<IVideoRepository, VideoRepository>();
+
+//Dang ky ProblemDetails
+builder.Services.AddProblemDetails();
+
+//Dang ky Global Exception Handler
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 
 
@@ -171,6 +182,7 @@ else
         c.RoutePrefix = string.Empty;
     });
 }
+app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
@@ -178,6 +190,8 @@ app.UseCors("AllowAll");
 // QUAN TRỌNG: Authentication phải đứng trước Authorization
 app.UseAuthentication();
 app.UseAuthorization();
+
+
 
 app.MapControllers();
 

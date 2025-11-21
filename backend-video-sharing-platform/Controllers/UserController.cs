@@ -130,5 +130,30 @@ namespace backend_video_sharing_platform.API.Controllers
                 return StatusCode(500, new { message = "Lỗi server khi upload avatar.", error = ex.Message });
             }
         }
+
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllUsers()
+        {
+            var users = await _userService.GetAllUsersAsync();
+
+            return Ok(new
+            {
+                message = "Lấy danh sách user thành công.",
+                count = users.Count(),
+                data = users
+            });
+        }
+
+        [HttpGet("{userId}")]
+        public async Task<IActionResult> GetUserById(string userId)
+        {
+            var user = await _userService.GetUserByIdAsync(userId);
+
+            return Ok(new
+            {
+                message = "Lấy thông tin user thành công.",
+                data = user
+            });
+        }
     }
 }
