@@ -27,4 +27,19 @@ public class VideoRepository : IVideoRepository
     };
         return await _context.ScanAsync<Video>(conditions).GetRemainingAsync();
     }
+
+    public async Task UpdateThumbnailAsync(string videoId, string thumbnailUrl, CancellationToken ct = default)
+    {
+        var video = await _context.LoadAsync<Video>(videoId, ct);
+        if (video == null) return;
+
+        video.ThumbnailUrl = thumbnailUrl;
+        await _context.SaveAsync(video, ct);
+    }
+
+    public Task<Video?> GetByIdAsync(string videoId, CancellationToken ct = default)
+            => _context.LoadAsync<Video>(videoId, ct);
+
+    public Task SaveAsync(Video video, CancellationToken ct = default)
+        => _context.SaveAsync(video, ct);
 }

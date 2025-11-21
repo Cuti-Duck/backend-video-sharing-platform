@@ -1,6 +1,7 @@
 ﻿using backend_video_sharing_platform.Application.DTOs.User;
 using backend_video_sharing_platform.Application.Interfaces;
 using Microsoft.Extensions.Logging;
+using backend_video_sharing_platform.Application.Common.Exceptions;
 
 namespace backend_video_sharing_platform.Application.Services
 {
@@ -17,6 +18,49 @@ namespace backend_video_sharing_platform.Application.Services
             _channelService = channelService;
             _storageService = storageService;
             _logger = logger;
+        }
+
+        public async Task<IEnumerable<UserResponse>> GetAllUsersAsync()
+        {
+            var users = await _userRepository.GetAllUsersAsync();
+
+            //if (!users.Any())
+            //{
+            //    throw new NotFoundException("Không tìm thấy user nào trong hệ thống.");
+            //}
+
+            return users.Select(u => new UserResponse
+            {
+                UserId = u.UserId,
+                Email = u.Email,
+                Name = u.Name,
+                Gender = u.Gender,
+                BirthDate = u.BirthDate,
+                PhoneNumber = u.PhoneNumber,
+                AvatarUrl = u.AvatarUrl,
+                ChannelId = u.ChannelId,
+                CreatedAt = u.CreatedAt 
+            }).ToList();
+        }
+
+        public async Task<UserResponse?> GetUserByIdAsync(string userId)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user is null)
+                throw new NotFoundException($"User với id '{userId}' không tồn tại.");
+
+            return new UserResponse
+            {
+                UserId = user.UserId,
+                Email = user.Email,
+                Name = user.Name,
+                Gender = user.Gender,
+                BirthDate = user.BirthDate,
+                PhoneNumber = user.PhoneNumber,
+                AvatarUrl = user.AvatarUrl,
+                ChannelId = user.ChannelId,
+                CreatedAt = user.CreatedAt
+            };
         }
 
         public async Task<bool> UpdateUserAsync(string userId, UpdateUserRequest request)
