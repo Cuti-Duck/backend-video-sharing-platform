@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace backend_video_sharing_platform.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/channels")]
     public class ChannelController : ControllerBase
     {
         private readonly IChannelService _channelService;

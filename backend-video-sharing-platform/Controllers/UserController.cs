@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace backend_video_sharing_platform.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/users")]
     public class UserController : ControllerBase
     {
         private readonly IDynamoDBContext _db;

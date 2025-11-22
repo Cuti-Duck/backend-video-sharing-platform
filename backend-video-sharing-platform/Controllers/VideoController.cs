@@ -16,14 +16,17 @@ namespace backend_video_sharing_platform.Api.Controllers
     {
         private readonly IVideoService _videoService;
         private readonly IMapper _mapper;
+        private readonly ILogger<VideoController> _logger;
 
-        public VideoController(IVideoService videoService, IMapper mapper)
+
+        public VideoController(IVideoService videoService, IMapper mapper, ILogger<VideoController> logger)
         {
             _videoService = videoService;
             _mapper = mapper;
+            _logger = logger;
         }
 
-        [HttpPost("presign")]
+        [HttpPost("create")]
         [Authorize]
         public async Task<IActionResult> GeneratePresignUrl([FromBody] PresignUrlRequest request)
         {
@@ -40,7 +43,7 @@ namespace backend_video_sharing_platform.Api.Controllers
 
             return Ok(result);
         }
-        [HttpGet]
+        [HttpGet("all")]
         public async Task<IActionResult> GetAllVideos()
         {
             var videos = await _videoService.GetAllVideosAsync();
@@ -97,6 +100,59 @@ namespace backend_video_sharing_platform.Api.Controllers
 
             return Ok(response);
         }
+        [Authorize]
+        [HttpDelete("{videoId}")]
+        public async Task<IActionResult> DeleteVideo(string videoId)
+        {
+            // Lấy userId từ JWT token
+            var currentUserId = User.FindFirst("userId")?.Value
+                             ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                             ?? User.FindFirst("sub")?.Value; // thử cả claim "sub"
+
+            _logger.LogInformation(
+                "DELETE request for video {VideoId} from user {UserId}",
+                videoId, currentUserId);
+
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                _logger.LogWarning("Unauthorized delete attempt - no userId in token");
+                return Unauthorized(new { message = "Không tìm thấy thông tin user" });
+            }
+
+            await _videoService.DeleteVideoAsync(videoId, currentUserId);
+            return NoContent();
+        }
+
+        [Authorize]
+        [HttpPut("{videoId}")]
+        public async Task<IActionResult> UpdateVideo(string videoId, [FromBody] UpdateVideoRequest request)
+        {
+            // Lấy userId từ JWT (ưu tiên access token)
+            var currentUserId =
+                User.FindFirst("userId")?.Value
+                ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                ?? User.FindFirst("sub")?.Value;
+
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                _logger.LogWarning("Unauthorized update attempt - no userId in token");
+                return Unauthorized(new { message = "Không tìm thấy thông tin user trong token." });
+            }
+
+            _logger.LogInformation(
+                "UPDATE request for video {VideoId} from user {UserId}",
+                videoId, currentUserId);
+
+            var updatedVideo = await _videoService.UpdateVideoAsync(videoId, currentUserId, request);
+
+            return Ok(new
+            {
+                message = "Cập nhật video thành công",
+                data = updatedVideo
+            });
+        }
+
+
 
     }
 }
