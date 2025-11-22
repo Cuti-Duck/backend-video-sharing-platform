@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using backend_video_sharing_platform.Application.DTOs;
+using backend_video_sharing_platform.Application.DTOs.Video;
 using backend_video_sharing_platform.Domain.Entities;
 
 namespace backend_video_sharing_platform.Application.Interfaces
@@ -23,6 +24,10 @@ namespace backend_video_sharing_platform.Application.Interfaces
     CancellationToken ct = default);
 
         Task<Video?> GetVideoByIdAsync(string videoId);
+
+        Task DeleteVideoAsync(string videoId, string currentUserId);
+
+        Task<Video> UpdateVideoAsync(string videoId, string userId, UpdateVideoRequest request);
 
     }
 }

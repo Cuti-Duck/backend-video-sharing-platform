@@ -3,5 +3,8 @@
     public interface IStorageService
     {
         Task<string> UploadFileAsync(Stream fileStream, string key, string contentType, CancellationToken ct = default);
+        Task DeleteFileAsync(string key, CancellationToken ct = default);
+
+        Task DeleteFolderAsync(string folderPrefix, CancellationToken ct = default);
     }
 }

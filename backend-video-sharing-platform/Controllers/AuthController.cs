@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace backend_video_sharing_platform.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/auths")]
     public sealed class AuthController : ControllerBase
     {
         private readonly ICognitoAuthService _auth;
