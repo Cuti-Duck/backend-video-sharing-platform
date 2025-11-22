@@ -2,12 +2,13 @@
 using Amazon.DynamoDBv2.Model;
 using Amazon.S3;
 using Amazon.S3.Model;
+using backend_video_sharing_platform.Application.Common.Exceptions;
 using backend_video_sharing_platform.Application.DTOs;
+using backend_video_sharing_platform.Application.DTOs.Video;
 using backend_video_sharing_platform.Application.Interfaces;
+using backend_video_sharing_platform.Domain.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using backend_video_sharing_platform.Application.Common.Exceptions;
-using backend_video_sharing_platform.Domain.Entities;
 
 namespace backend_video_sharing_platform.Infrastructure.Services
 {
@@ -35,6 +36,56 @@ namespace backend_video_sharing_platform.Infrastructure.Services
             _repo = repo;
             _storageService = storageService;
             _logger = logger;
+        }
+
+        public async Task DeleteVideoAsync(string videoId, string currentUserId)
+        {
+            var video = await _repo.GetByIdAsync(videoId);
+
+            if (video == null)
+                throw new NotFoundException($"Video {videoId} không tồn tại.");
+
+            // So sánh case-insensitive và trim whitespace
+            if (!string.Equals(video.UserId?.Trim(), currentUserId?.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning(
+                    "FORBIDDEN - User {CurrentUserId} attempted to delete video {VideoId} owned by {VideoUserId}",
+                    currentUserId, videoId, video.UserId);
+                throw new ForbiddenException("Bạn không có quyền xóa video này.");
+            }
+
+            try
+            {
+                // Xóa file raw trong S3 nếu có
+                if (!string.IsNullOrEmpty(video.Key))
+                {
+                    await _storageService.DeleteFileAsync(video.Key);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not delete raw video file {Key}", video.Key);
+                // Tiếp tục xóa dù file không tồn tại
+            }
+
+            try
+            {
+                // Xóa luôn thư mục processed/
+                var processedPrefix = $"{video.VideoId}/";
+                await _storageService.DeleteFolderAsync(processedPrefix);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not delete processed folder for video {VideoId}", videoId);
+                // Tiếp tục xóa dù folder không tồn tại
+            }
+
+            // Xóa khỏi DynamoDB - đây là bước quan trọng nhất
+            await _repo.DeleteAsync(videoId);
+
+            _logger.LogInformation(
+                "User {UserId} deleted video {VideoId} successfully",
+                currentUserId, videoId);
         }
 
         public async Task<PresignUrlResponse> GenerateUploadUrlAsync(PresignUrlRequest request, string userId)
@@ -177,5 +228,40 @@ namespace backend_video_sharing_platform.Infrastructure.Services
                 "User {UserId} upload thumbnail thành công cho video {VideoId}",
                 userId, videoId);
         }
+
+        public async Task<Video> UpdateVideoAsync(string videoId, string userId, UpdateVideoRequest request)
+        {
+            var video = await _repo.GetByIdAsync(videoId);
+
+            if (video == null)
+                throw new NotFoundException("Video không tồn tại.");
+
+            if (video.UserId != userId)
+                throw new ForbiddenException("Bạn không có quyền cập nhật video này.");
+
+            bool isUpdated = false;
+
+            if (request.Title != null && request.Title != video.Title)
+            {
+                video.Title = request.Title;
+                isUpdated = true;
+            }
+
+            if (request.Description != null && request.Description != video.Description)
+            {
+                video.Description = request.Description;
+                isUpdated = true;
+            }
+
+            if (!isUpdated)
+                return video; // Không thay đổi gì
+
+            video.UpdatedAt = DateTime.UtcNow.ToString("o");
+
+            await _repo.SaveAsync(video);
+
+            return video;
+        }
+
     }
 }

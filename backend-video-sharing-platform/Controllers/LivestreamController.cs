@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace backend_video_sharing_platform.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/livestreams")]
     public class LivestreamController : ControllerBase
     {
         private readonly IIVSService _ivsService;

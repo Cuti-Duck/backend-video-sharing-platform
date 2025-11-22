@@ -42,4 +42,7 @@ public class VideoRepository : IVideoRepository
 
     public Task SaveAsync(Video video, CancellationToken ct = default)
         => _context.SaveAsync(video, ct);
+
+    public Task DeleteAsync(string videoId)
+        => _context.DeleteAsync<Video>(videoId);
 }
