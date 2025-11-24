@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace backend_video_sharing_platform.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/checkconnect")]
     public class CheckConnectController : ControllerBase
     {
         private readonly ILogger<CheckConnectController> _logger;

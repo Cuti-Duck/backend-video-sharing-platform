@@ -119,8 +119,7 @@ builder.Services.AddSwaggerGen(options =>
     options.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Video Sharing Platform API",
-        Version = "v1",
-        Description = "API với AWS Cognito Authentication"
+        Version = "v1"
     });
 
     // Định nghĩa Security Scheme cho JWT
@@ -131,7 +130,7 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Nhập Access Token từ AWS Cognito. VD: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'"
+        Description = "Enter the Access Token from AWS Cognito. VD: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'"
     });
 
     // Yêu cầu JWT cho tất cả endpoints có [Authorize]

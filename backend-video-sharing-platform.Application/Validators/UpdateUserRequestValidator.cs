@@ -9,24 +9,26 @@ namespace backend_video_sharing_platform.Application.Validators
     {
         public UpdateUserRequestValidator()
         {
-            // Name — optional nhưng không được quá dài
+            // Name — optional but must not be too long
             RuleFor(x => x.Name)
-                .MaximumLength(50).WithMessage("Tên không được vượt quá 50 ký tự.");
+                .MaximumLength(50).WithMessage("Name must not exceed 50 characters.");
 
-            // Gender — chỉ male hoặc female (case-insensitive)
+            // Gender — only male or female (case-insensitive)
             RuleFor(x => x.Gender)
-                .Must(g => string.IsNullOrEmpty(g) || g.Equals("male", StringComparison.OrdinalIgnoreCase) || g.Equals("female", StringComparison.OrdinalIgnoreCase))
-                .WithMessage("Giới tính chỉ được là 'male' hoặc 'female'.");
+                .Must(g => string.IsNullOrEmpty(g)
+                    || g.Equals("male", StringComparison.OrdinalIgnoreCase)
+                    || g.Equals("female", StringComparison.OrdinalIgnoreCase))
+                .WithMessage("Gender must be either 'male' or 'female'.");
 
-            // BirthDate — đúng format yyyy-MM-dd
+            // BirthDate — correct format yyyy-MM-dd
             RuleFor(x => x.BirthDate)
                 .Must(BeValidDateFormat)
-                .WithMessage("Ngày sinh phải có định dạng yyyy-MM-dd.");
+                .WithMessage("Birth date must follow the yyyy-MM-dd format.");
 
-            // PhoneNumber — theo định dạng +849xxxxxxxx (VN)
+            // PhoneNumber — E.164 format
             RuleFor(x => x.PhoneNumber)
                 .Must(p => string.IsNullOrWhiteSpace(p) || Regex.IsMatch(p, @"^\+?\d{9,15}$"))
-                .WithMessage("PhoneNumber must be E.164 format (e.g. +84901234567).");
+                .WithMessage("Phone number must be in E.164 format (e.g. +84901234567).");
         }
 
         private bool BeValidDateFormat(string? date)
@@ -34,7 +36,12 @@ namespace backend_video_sharing_platform.Application.Validators
             if (string.IsNullOrEmpty(date))
                 return true; // Optional field
 
-            return DateTime.TryParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
+            return DateTime.TryParseExact(
+                date,
+                "yyyy-MM-dd",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out _);
         }
     }
 }

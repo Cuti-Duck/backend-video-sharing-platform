@@ -59,7 +59,7 @@ namespace backend_video_sharing_platform.API.Controllers
                 _logger.LogError(ex, "Error creating livestream");
                 return StatusCode(500, new
                 {
-                    message = "Lỗi khi tạo livestream",
+                    message = "An error occurred while creating the livestream.",
                     error = ex.Message
                 });
             }

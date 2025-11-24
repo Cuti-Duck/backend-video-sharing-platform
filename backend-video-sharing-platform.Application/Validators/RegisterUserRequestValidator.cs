@@ -9,42 +9,42 @@ namespace backend_video_sharing_platform.Application.Validators
     {
         public RegisterUserRequestValidator()
         {
-            // Email — bắt buộc, đúng format
+            // Email — required, valid format
             RuleFor(x => x.Email)
-                .NotEmpty().WithMessage("Email không được để trống.")
-                .EmailAddress().WithMessage("Email không hợp lệ.");
+                .NotEmpty().WithMessage("Email is required.")
+                .EmailAddress().WithMessage("Invalid email format.");
 
-            // Password — bắt buộc, đủ mạnh
+            // Password — required, strong
             RuleFor(x => x.Password)
-                .NotEmpty().WithMessage("Mật khẩu không được để trống.")
-                .MinimumLength(8).WithMessage("Mật khẩu phải có ít nhất 8 ký tự.")
-                .Matches("[A-Z]").WithMessage("Mật khẩu phải chứa ít nhất 1 chữ in hoa.")
-                .Matches("[a-z]").WithMessage("Mật khẩu phải chứa ít nhất 1 chữ thường.")
-                .Matches("[0-9]").WithMessage("Mật khẩu phải chứa ít nhất 1 số.")
-                .Matches("[^a-zA-Z0-9]").WithMessage("Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt.");
+                .NotEmpty().WithMessage("Password is required.")
+                .MinimumLength(8).WithMessage("Password must be at least 8 characters long.")
+                .Matches("[A-Z]").WithMessage("Password must contain at least one uppercase letter.")
+                .Matches("[a-z]").WithMessage("Password must contain at least one lowercase letter.")
+                .Matches("[0-9]").WithMessage("Password must contain at least one number.")
+                .Matches("[^a-zA-Z0-9]").WithMessage("Password must contain at least one special character.");
 
-            // Name — bắt buộc, không quá dài
+            // Name — required, not too long
             RuleFor(x => x.Name)
-                .NotEmpty().WithMessage("Tên không được để trống.")
-                .MaximumLength(50).WithMessage("Tên không được vượt quá 50 ký tự.");
+                .NotEmpty().WithMessage("Name is required.")
+                .MaximumLength(50).WithMessage("Name must not exceed 50 characters.");
 
-            // Gender — chỉ male hoặc female
+            // Gender — only male or female
             RuleFor(x => x.Gender)
                 .Must(g => string.IsNullOrEmpty(g)
                     || g.Equals("male", StringComparison.OrdinalIgnoreCase)
                     || g.Equals("female", StringComparison.OrdinalIgnoreCase))
-                .WithMessage("Giới tính chỉ được là 'male' hoặc 'female'.");
+                .WithMessage("Gender must be either 'male' or 'female'.");
 
-            // BirthDate — đúng định dạng yyyy-MM-dd
+            // BirthDate — correct format yyyy-MM-dd
             RuleFor(x => x.BirthDate)
-                .NotEmpty().WithMessage("Ngày sinh không được để trống.")
+                .NotEmpty().WithMessage("Birth date is required.")
                 .Must(BeValidDateFormat)
-                .WithMessage("Ngày sinh phải có định dạng yyyy-MM-dd.");
+                .WithMessage("Birth date must follow the yyyy-MM-dd format.");
 
-            // PhoneNumber — đúng format quốc tế (E.164)
+            // PhoneNumber — valid international format (E.164)
             RuleFor(x => x.PhoneNumber)
                 .Must(p => string.IsNullOrWhiteSpace(p) || Regex.IsMatch(p, @"^\+?\d{9,15}$"))
-                .WithMessage("Số điện thoại phải đúng định dạng E.164 (vd: +84901234567).");
+                .WithMessage("Phone number must be in E.164 format (e.g., +84901234567).");
         }
 
         private bool BeValidDateFormat(string? date)
