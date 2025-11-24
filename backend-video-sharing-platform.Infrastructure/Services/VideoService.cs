@@ -6,6 +6,7 @@ using backend_video_sharing_platform.Application.Common.Exceptions;
 using backend_video_sharing_platform.Application.DTOs;
 using backend_video_sharing_platform.Application.DTOs.Video;
 using backend_video_sharing_platform.Application.Interfaces;
+using backend_video_sharing_platform.Application.Services;
 using backend_video_sharing_platform.Domain.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -20,6 +21,7 @@ namespace backend_video_sharing_platform.Infrastructure.Services
         private readonly IVideoRepository _repo;
         private readonly IStorageService _storageService;
         private readonly ILogger<VideoService> _logger;
+        private readonly IChannelService _channelService;
 
         public VideoService(
             IAmazonS3 s3,
@@ -27,7 +29,8 @@ namespace backend_video_sharing_platform.Infrastructure.Services
             IConfiguration config,
             IVideoRepository repo,
             IStorageService storageService,
-            ILogger<VideoService> logger
+            ILogger<VideoService> logger,
+            IChannelService channelService
             )
         {
             _s3 = s3;
@@ -36,57 +39,44 @@ namespace backend_video_sharing_platform.Infrastructure.Services
             _repo = repo;
             _storageService = storageService;
             _logger = logger;
-        }
+            _channelService = channelService;
+         }
 
         public async Task DeleteVideoAsync(string videoId, string currentUserId)
         {
             var video = await _repo.GetByIdAsync(videoId);
 
             if (video == null)
-                throw new NotFoundException($"Video {videoId} không tồn tại.");
+                throw new NotFoundException($"Video {videoId} does not exist.");
 
-            // So sánh case-insensitive và trim whitespace
             if (!string.Equals(video.UserId?.Trim(), currentUserId?.Trim(), StringComparison.OrdinalIgnoreCase))
-            {
-                _logger.LogWarning(
-                    "FORBIDDEN - User {CurrentUserId} attempted to delete video {VideoId} owned by {VideoUserId}",
-                    currentUserId, videoId, video.UserId);
-                throw new ForbiddenException("Bạn không có quyền xóa video này.");
-            }
+                throw new ForbiddenException("You do not have permission to delete this video.");
 
+            // Delete raw video
             try
             {
-                // Xóa file raw trong S3 nếu có
                 if (!string.IsNullOrEmpty(video.Key))
-                {
                     await _storageService.DeleteFileAsync(video.Key);
-                }
             }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Could not delete raw video file {Key}", video.Key);
-                // Tiếp tục xóa dù file không tồn tại
-            }
+            catch { }
 
+            // Delete processed files
             try
             {
-                // Xóa luôn thư mục processed/
                 var processedPrefix = $"{video.VideoId}/";
                 await _storageService.DeleteFolderAsync(processedPrefix);
             }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Could not delete processed folder for video {VideoId}", videoId);
-                // Tiếp tục xóa dù folder không tồn tại
-            }
+            catch { }
 
-            // Xóa khỏi DynamoDB - đây là bước quan trọng nhất
+            // Delete db record
             await _repo.DeleteAsync(videoId);
 
-            _logger.LogInformation(
-                "User {UserId} deleted video {VideoId} successfully",
-                currentUserId, videoId);
+            
+            await _channelService.DecreaseVideoCountAsync(video.ChannelId);
+
+            _logger.LogInformation("User {UserId} deleted video {VideoId}", currentUserId, videoId);
         }
+
 
         public async Task<PresignUrlResponse> GenerateUploadUrlAsync(PresignUrlRequest request, string userId)
         {
@@ -96,11 +86,11 @@ namespace backend_video_sharing_platform.Infrastructure.Services
             var videosTable = _config["AWS:DynamoDB:VideosTable"]
                               ?? throw new InvalidOperationException("Missing AWS:DynamoDB:VideosTable config");
 
-            // 1. Tạo videoId & S3 key
+            // 1. Create videoId & S3 key
             var videoId = Guid.NewGuid().ToString();
             var key = $"raw-videos/{userId}/{videoId}.mp4";
 
-            // 2. Generate pre-signed URL (PUT, 15 phút)
+            // 2. Generate pre-signed URL (PUT, 15 minutes)
             var presignRequest = new GetPreSignedUrlRequest
             {
                 BucketName = rawBucket,
@@ -112,7 +102,7 @@ namespace backend_video_sharing_platform.Infrastructure.Services
 
             var uploadUrl = _s3.GetPreSignedURL(presignRequest);
 
-            // 3. Lưu metadata vào DynamoDB
+            // 3. Save metadata to DynamoDB
             var now = DateTime.UtcNow.ToString("o");
 
             var item = new Dictionary<string, AttributeValue>
@@ -128,7 +118,7 @@ namespace backend_video_sharing_platform.Infrastructure.Services
                 ["updatedAt"] = new AttributeValue(now),
                 ["viewCount"] = new AttributeValue { N = "0" },
                 ["likeCount"] = new AttributeValue { N = "0" }
-                // playbackUrl, duration, thumbnailUrl sẽ được cập nhật sau bởi Lambda processed-bucket
+                // playbackUrl, duration, thumbnailUrl will be updated later by Lambda processed-bucket
             };
 
             await _dynamo.PutItemAsync(new PutItemRequest
@@ -143,6 +133,7 @@ namespace backend_video_sharing_platform.Infrastructure.Services
                 UploadUrl = uploadUrl
             };
         }
+
         public async Task<List<VideoResponseDto>> GetAllVideosAsync()
         {
             var videos = await _repo.GetAllVideosAsync();
@@ -167,7 +158,7 @@ namespace backend_video_sharing_platform.Infrastructure.Services
         }
 
         public Task<Video?> GetVideoByIdAsync(string videoId)
-       => _repo.GetByIdAsync(videoId);
+            => _repo.GetByIdAsync(videoId);
 
         public async Task<List<VideoResponseDto>> GetVideosByChannelIdAsync(string channelId)
         {
@@ -193,29 +184,29 @@ namespace backend_video_sharing_platform.Infrastructure.Services
         }
 
         public async Task UploadThumbnailAsync(
-         string videoId,
-         string userId,
-         Stream fileStream,
-         string fileName,
-         string contentType,
-         CancellationToken ct = default)
+            string videoId,
+            string userId,
+            Stream fileStream,
+            string fileName,
+            string contentType,
+            CancellationToken ct = default)
         {
             var video = await _repo.GetByIdAsync(videoId, ct);
             if (video is null)
-                throw new NotFoundException($"Video với id '{videoId}' không tồn tại.");
+                throw new NotFoundException($"Video with id '{videoId}' does not exist.");
 
             if (video.UserId != userId)
-                throw new ForbiddenException("Bạn không có quyền cập nhật video này.");
+                throw new ForbiddenException("You do not have permission to update this video.");
 
             if (!contentType.StartsWith("image/"))
-                throw new BadRequestException("File không hợp lệ. Chỉ chấp nhận file ảnh.");
+                throw new BadRequestException("Invalid file. Only image files are accepted.");
 
             var ext = Path.GetExtension(fileName).ToLower();
             if (string.IsNullOrEmpty(ext))
                 ext = contentType == "image/png" ? ".png" : ".jpg";
 
             if (ext != ".jpg" && ext != ".jpeg" && ext != ".png")
-                throw new BadRequestException("Chỉ chấp nhận .jpg, .jpeg, .png.");
+                throw new BadRequestException("Only .jpg, .jpeg, .png files are allowed.");
 
             var key = $"video-thumbnails/{videoId}/{DateTime.UtcNow.Ticks}{ext}";
 
@@ -225,7 +216,7 @@ namespace backend_video_sharing_platform.Infrastructure.Services
             await _repo.SaveAsync(video, ct);
 
             _logger.LogInformation(
-                "User {UserId} upload thumbnail thành công cho video {VideoId}",
+                "User {UserId} uploaded thumbnail successfully for video {VideoId}",
                 userId, videoId);
         }
 
@@ -234,10 +225,10 @@ namespace backend_video_sharing_platform.Infrastructure.Services
             var video = await _repo.GetByIdAsync(videoId);
 
             if (video == null)
-                throw new NotFoundException("Video không tồn tại.");
+                throw new NotFoundException("Video does not exist.");
 
             if (video.UserId != userId)
-                throw new ForbiddenException("Bạn không có quyền cập nhật video này.");
+                throw new ForbiddenException("You do not have permission to update this video.");
 
             bool isUpdated = false;
 
@@ -254,7 +245,7 @@ namespace backend_video_sharing_platform.Infrastructure.Services
             }
 
             if (!isUpdated)
-                return video; // Không thay đổi gì
+                return video; // No changes
 
             video.UpdatedAt = DateTime.UtcNow.ToString("o");
 
@@ -262,6 +253,5 @@ namespace backend_video_sharing_platform.Infrastructure.Services
 
             return video;
         }
-
     }
 }

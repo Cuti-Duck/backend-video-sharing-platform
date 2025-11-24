@@ -26,7 +26,7 @@ namespace backend_video_sharing_platform.Application.Services
 
             //if (!users.Any())
             //{
-            //    throw new NotFoundException("Không tìm thấy user nào trong hệ thống.");
+            //    throw new NotFoundException("No users found in the system.");
             //}
 
             return users.Select(u => new UserResponse
@@ -39,7 +39,7 @@ namespace backend_video_sharing_platform.Application.Services
                 PhoneNumber = u.PhoneNumber,
                 AvatarUrl = u.AvatarUrl,
                 ChannelId = u.ChannelId,
-                CreatedAt = u.CreatedAt 
+                CreatedAt = u.CreatedAt
             }).ToList();
         }
 
@@ -47,7 +47,7 @@ namespace backend_video_sharing_platform.Application.Services
         {
             var user = await _userRepository.GetByIdAsync(userId);
             if (user is null)
-                throw new NotFoundException($"User với id '{userId}' không tồn tại.");
+                throw new NotFoundException($"User with id '{userId}' does not exist.");
 
             return new UserResponse
             {
@@ -68,7 +68,7 @@ namespace backend_video_sharing_platform.Application.Services
             var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
             {
-                _logger.LogWarning($"User {userId} không tồn tại.");
+                _logger.LogWarning($"User {userId} does not exist.");
                 return false;
             }
 
@@ -102,11 +102,12 @@ namespace backend_video_sharing_platform.Application.Services
             if (isUpdated)
             {
                 await _userRepository.SaveAsync(user);
-                _logger.LogInformation($"Đã cập nhật thông tin user {userId} thành công.");
+                _logger.LogInformation($"User {userId} updated successfully.");
             }
 
             return isUpdated;
         }
+
         public async Task<UploadAvatarResponse?> UploadAvatarAsync(
             string userId,
             Stream fileStream,
@@ -117,12 +118,12 @@ namespace backend_video_sharing_platform.Application.Services
             var user = await _userRepository.GetByIdAsync(userId, ct);
             if (user == null)
             {
-                _logger.LogWarning("User {UserId} không tồn tại", userId);
+                _logger.LogWarning("User {UserId} does not exist", userId);
                 return null;
             }
 
             if (contentType != "image/jpeg" && contentType != "image/png")
-                throw new InvalidOperationException("Chỉ chấp nhận ảnh .jpg hoặc .png.");
+                throw new InvalidOperationException("Only .jpg or .png images are accepted.");
 
             var ext = Path.GetExtension(fileName);
             if (string.IsNullOrEmpty(ext))
@@ -135,7 +136,7 @@ namespace backend_video_sharing_platform.Application.Services
             user.AvatarUrl = url;
             await _userRepository.SaveAsync(user, ct);
 
-            _logger.LogInformation("User {UserId} cập nhật avatar thành công", userId);
+            _logger.LogInformation("User {UserId} updated avatar successfully", userId);
 
             return new UploadAvatarResponse { AvatarUrl = url };
         }

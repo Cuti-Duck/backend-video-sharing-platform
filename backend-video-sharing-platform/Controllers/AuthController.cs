@@ -54,7 +54,7 @@ namespace backend_video_sharing_platform.API.Controllers
 
             return Ok(new
             {
-                Message = "Token hợp lệ — Đây là danh sách claims từ AWS Cognito:",
+                Message = "Valid token — Here is the list of claims from AWS Cognito:",
                 Claims = claims
             });
         }
