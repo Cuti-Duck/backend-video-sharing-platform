@@ -24,6 +24,9 @@ using backend_video_sharing_platform.Application.Mapping;
 
 var builder = WebApplication.CreateBuilder(args);
 
+//var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+//builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
 // Configure file upload limits
 builder.Services.Configure<FormOptions>(options =>
 {
@@ -116,8 +119,7 @@ builder.Services.AddSwaggerGen(options =>
     options.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Video Sharing Platform API",
-        Version = "v1",
-        Description = "API với AWS Cognito Authentication"
+        Version = "v1"
     });
 
     // Định nghĩa Security Scheme cho JWT
@@ -128,7 +130,7 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Nhập Access Token từ AWS Cognito. VD: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'"
+        Description = "Enter the Access Token from AWS Cognito. VD: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'"
     });
 
     // Yêu cầu JWT cho tất cả endpoints có [Authorize]

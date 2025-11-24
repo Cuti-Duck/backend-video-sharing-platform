@@ -18,7 +18,7 @@ namespace backend_video_sharing_platform.Infrastructure.Repositories
         {
             var conditions = new List<ScanCondition>
             {
-                // ⚡ Quan trọng: dùng nameof(Channel.UserId)
+                // Quan trọng: dùng nameof(Channel.UserId)
                 new ScanCondition(nameof(Channel.UserId), ScanOperator.Equal, userId)
             };
 

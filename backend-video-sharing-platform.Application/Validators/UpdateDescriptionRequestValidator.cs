@@ -8,8 +8,8 @@ namespace backend_video_sharing_platform.Application.Validators
         public UpdateDescriptionRequestValidator()
         {
             RuleFor(x => x.Description)
-                .NotEmpty().WithMessage("Mô tả kênh không được để trống.")
-                .MaximumLength(500).WithMessage("Mô tả kênh không được vượt quá 500 ký tự.");
+                .NotEmpty().WithMessage("Channel description is required.")
+                .MaximumLength(500).WithMessage("Channel description must not exceed 500 characters.");
         }
     }
 }

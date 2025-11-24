@@ -35,7 +35,7 @@ namespace backend_video_sharing_platform.API.Controllers
                 if (string.IsNullOrEmpty(userId))
                 {
                     _logger.LogWarning("UserId not found in token");
-                    return Unauthorized(new { message = "Không tìm thấy userId trong token." });
+                    return Unauthorized(new { message = "userId not found in token." });
                 }
 
                 _logger.LogInformation($"Fetching user info for userId: {userId}");
@@ -45,7 +45,7 @@ namespace backend_video_sharing_platform.API.Controllers
                 if (user == null)
                 {
                     _logger.LogWarning($"User not found: {userId}");
-                    return NotFound(new { message = "User không tồn tại." });
+                    return NotFound(new { message = "User does not exist." });
                 }
 
                 var response = new UserResponse
@@ -63,7 +63,7 @@ namespace backend_video_sharing_platform.API.Controllers
 
                 return Ok(new
                 {
-                    message = "Lấy thông tin user thành công.",
+                    message = "User information retrieved successfully.",
                     data = response
                 });
             }
@@ -72,7 +72,7 @@ namespace backend_video_sharing_platform.API.Controllers
                 _logger.LogError(ex, "Error getting user info");
                 return StatusCode(500, new
                 {
-                    message = "Lỗi server",
+                    message = "Server error",
                     error = ex.Message
                 });
             }
@@ -86,14 +86,14 @@ namespace backend_video_sharing_platform.API.Controllers
                       ?? User.FindFirstValue("sub");
 
             if (string.IsNullOrEmpty(userId))
-                return Unauthorized(new { message = "Không tìm thấy userId trong token." });
+                return Unauthorized(new { message = "userId not found in token." });
 
             var updated = await _userService.UpdateUserAsync(userId, request);
 
             if (!updated)
-                return NotFound(new { message = "User không tồn tại hoặc không có gì để cập nhật." });
+                return NotFound(new { message = "User does not exist or there is nothing to update." });
 
-            return Ok(new { message = "Cập nhật thông tin user + đồng bộ Channel thành công." });
+            return Ok(new { message = "User information updated and channel synchronized successfully." });
         }
 
         [Authorize]
@@ -103,13 +103,13 @@ namespace backend_video_sharing_platform.API.Controllers
         public async Task<IActionResult> UploadAvatar([FromForm] UploadAvatarRequest request, CancellationToken ct)
         {
             if (request.File == null || request.File.Length == 0)
-                return BadRequest(new { message = "Vui lòng chọn file ảnh." });
+                return BadRequest(new { message = "Please select an image file." });
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
                        ?? User.FindFirstValue("sub");
 
             if (string.IsNullOrEmpty(userId))
-                return Unauthorized(new { message = "Không tìm thấy userId trong token." });
+                return Unauthorized(new { message = "userId not found in token." });
 
             try
             {
@@ -117,9 +117,9 @@ namespace backend_video_sharing_platform.API.Controllers
                 var result = await _userService.UploadAvatarAsync(userId, stream, request.File.FileName, request.File.ContentType, ct);
 
                 if (result == null)
-                    return NotFound(new { message = "User không tồn tại." });
+                    return NotFound(new { message = "User does not exist." });
 
-                return Ok(new { message = "Upload avatar thành công.", avatarUrl = result.AvatarUrl });
+                return Ok(new { message = "Avatar uploaded successfully.", avatarUrl = result.AvatarUrl });
             }
             catch (InvalidOperationException ex)
             {
@@ -127,7 +127,7 @@ namespace backend_video_sharing_platform.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Lỗi server khi upload avatar.", error = ex.Message });
+                return StatusCode(500, new { message = "Server error while uploading avatar.", error = ex.Message });
             }
         }
 
@@ -138,7 +138,7 @@ namespace backend_video_sharing_platform.API.Controllers
 
             return Ok(new
             {
-                message = "Lấy danh sách user thành công.",
+                message = "User list retrieved successfully.",
                 count = users.Count(),
                 data = users
             });
@@ -151,7 +151,7 @@ namespace backend_video_sharing_platform.API.Controllers
 
             return Ok(new
             {
-                message = "Lấy thông tin user thành công.",
+                message = "User information retrieved successfully.",
                 data = user
             });
         }

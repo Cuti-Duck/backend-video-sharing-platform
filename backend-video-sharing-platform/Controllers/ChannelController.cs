@@ -23,11 +23,11 @@ namespace backend_video_sharing_platform.API.Controllers
         {
             var channel = await _channelService.GetChannelByIdAsync(channelId, ct);
             if (channel == null)
-                return NotFound(new { message = "Không tìm thấy kênh." });
+                return NotFound(new { message = "Channel not found." });
 
             return Ok(new
             {
-                message = "Lấy thông tin kênh thành công.",
+                message = "Channel information retrieved successfully.",
                 data = channel
             });
         }
@@ -41,14 +41,14 @@ namespace backend_video_sharing_platform.API.Controllers
                       ?? User.FindFirstValue("sub");
 
             if (string.IsNullOrEmpty(userId))
-                return Unauthorized(new { message = "Không xác định được người dùng từ token." });
+                return Unauthorized(new { message = "Unable to identify the user from the token." });
 
             var success = await _channelService.UpdateDescriptionAsync(userId, request.Description, ct);
 
             if (!success)
-                return NotFound(new { message = "Không tìm thấy kênh để cập nhật." });
+                return NotFound(new { message = "No channel found to update." });
 
-            return Ok(new { message = "Cập nhật mô tả kênh thành công." });
+            return Ok(new { message = "Channel description updated successfully." });
         }
     }
 }

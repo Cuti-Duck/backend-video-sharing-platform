@@ -7,5 +7,6 @@ namespace backend_video_sharing_platform.Application.Interfaces
         Task<bool> UpdateChannelNameByUserIdAsync(string userId, string newName);
         Task<ChannelResponse?> GetChannelByIdAsync(string channelId, CancellationToken ct = default);
         Task<bool> UpdateDescriptionAsync(string userId, string description, CancellationToken ct = default);
+        Task DecreaseVideoCountAsync(string channelId);
     }
 }

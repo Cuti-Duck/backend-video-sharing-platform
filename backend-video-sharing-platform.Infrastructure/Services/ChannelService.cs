@@ -4,7 +4,6 @@ using backend_video_sharing_platform.Application.Interfaces;
 using Microsoft.Extensions.Logging;
 using backend_video_sharing_platform.Domain.Entities;
 
-
 namespace backend_video_sharing_platform.Application.Services
 {
     public class ChannelService : IChannelService
@@ -25,7 +24,7 @@ namespace backend_video_sharing_platform.Application.Services
             var channel = await _channelRepository.GetByUserIdAsync(userId);
             if (channel == null)
             {
-                _logger.LogWarning($"Không tìm thấy Channel của userId {userId}.");
+                _logger.LogWarning($"Channel not found for userId {userId}.");
                 return false;
             }
 
@@ -33,12 +32,13 @@ namespace backend_video_sharing_platform.Application.Services
             {
                 channel.Name = newName;
                 await _channelRepository.SaveAsync(channel);
-                _logger.LogInformation($"Đã cập nhật tên Channel cho user {userId} → {newName}");
+                _logger.LogInformation($"Channel name updated for user {userId} → {newName}");
                 return true;
             }
 
             return false;
         }
+
         public async Task<ChannelResponse?> GetChannelByIdAsync(string channelId, CancellationToken ct = default)
         {
             try
@@ -47,7 +47,7 @@ namespace backend_video_sharing_platform.Application.Services
 
                 if (channel == null)
                 {
-                    _logger.LogWarning("Không tìm thấy channelId: {ChannelId}", channelId);
+                    _logger.LogWarning("Channel not found: {ChannelId}", channelId);
                     return null;
                 }
 
@@ -63,25 +63,44 @@ namespace backend_video_sharing_platform.Application.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi lấy thông tin channel: {ChannelId}", channelId);
+                _logger.LogError(ex, "Error retrieving channel information: {ChannelId}", channelId);
                 throw;
             }
         }
+
         public async Task<bool> UpdateDescriptionAsync(string userId, string description, CancellationToken ct = default)
         {
             var channel = await _db.LoadAsync<Channel>(userId, ct);
             if (channel == null)
             {
-                _logger.LogWarning("Không tìm thấy channel cho userId: {UserId}", userId);
+                _logger.LogWarning("Channel not found for userId: {UserId}", userId);
                 return false;
             }
 
             channel.Description = description;
             await _db.SaveAsync(channel, ct);
 
-            _logger.LogInformation("Đã cập nhật mô tả cho kênh của userId: {UserId}", userId);
+            _logger.LogInformation("Channel description updated for userId: {UserId}", userId);
             return true;
         }
 
+        public async Task DecreaseVideoCountAsync(string channelId)
+        {
+            // Load channel
+            var channel = await _channelRepository.GetByUserIdAsync(channelId);
+            if (channel == null)
+            {
+                _logger.LogWarning("Channel {ChannelId} not found when decreasing videoCount", channelId);
+                return;
+            }
+
+            // Prevent negative values
+            if (channel.VideoCount > 0)
+                channel.VideoCount -= 1;
+
+            await _channelRepository.SaveAsync(channel);
+
+            _logger.LogInformation("videoCount decreased for channel {ChannelId}", channelId);
+        }
     }
 }

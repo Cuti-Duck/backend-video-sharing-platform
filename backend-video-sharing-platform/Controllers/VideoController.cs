@@ -66,13 +66,13 @@ namespace backend_video_sharing_platform.Api.Controllers
     CancellationToken ct)
         {
             if (request.Thumbnail == null || request.Thumbnail.Length == 0)
-                throw new BadRequestException("Vui lòng chọn file thumbnail.");
+                throw new BadRequestException("Please select a thumbnail file.");
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
                        ?? User.FindFirstValue("sub");
 
             if (string.IsNullOrEmpty(userId))
-                throw new UnauthorizedAccessException("Không tìm thấy userId trong token.");
+                throw new UnauthorizedAccessException("userId not found in token.");
 
             await using var stream = request.Thumbnail.OpenReadStream();
 
@@ -85,7 +85,7 @@ namespace backend_video_sharing_platform.Api.Controllers
                 ct
             );
 
-            return Ok(new { message = "Upload thumbnail thành công." });
+            return Ok(new { message = "Thumbnail uploaded successfully." });
         }
 
         [HttpGet("{videoId}")]
@@ -94,7 +94,7 @@ namespace backend_video_sharing_platform.Api.Controllers
             var video = await _videoService.GetVideoByIdAsync(videoId);
 
             if (video == null)
-                return NotFound(new { message = "Video không tồn tại." });
+                return NotFound(new { message = "Video does not exist." });
 
             var response = _mapper.Map<VideoResponse>(video);
 
@@ -116,7 +116,7 @@ namespace backend_video_sharing_platform.Api.Controllers
             if (string.IsNullOrEmpty(currentUserId))
             {
                 _logger.LogWarning("Unauthorized delete attempt - no userId in token");
-                return Unauthorized(new { message = "Không tìm thấy thông tin user" });
+                return Unauthorized(new { message = "User information not found" });
             }
 
             await _videoService.DeleteVideoAsync(videoId, currentUserId);
@@ -136,7 +136,7 @@ namespace backend_video_sharing_platform.Api.Controllers
             if (string.IsNullOrEmpty(currentUserId))
             {
                 _logger.LogWarning("Unauthorized update attempt - no userId in token");
-                return Unauthorized(new { message = "Không tìm thấy thông tin user trong token." });
+                return Unauthorized(new { message = "userId not found in token." });
             }
 
             _logger.LogInformation(
@@ -147,7 +147,7 @@ namespace backend_video_sharing_platform.Api.Controllers
 
             return Ok(new
             {
-                message = "Cập nhật video thành công",
+                message = "Video updated successfully.",
                 data = updatedVideo
             });
         }
