@@ -6,5 +6,7 @@ namespace backend_video_sharing_platform.Application.Interfaces
     {
         Task<Channel?> GetByUserIdAsync(string userId);
         Task SaveAsync(Channel channel);
+        Task<Channel?> GetByIdAsync(string channelId);
+
     }
 }
