@@ -99,6 +99,8 @@ builder.Services.AddScoped<IIVSService, IVSService>();
 builder.Services.AddScoped<IChannelService, ChannelService>();
 builder.Services.AddScoped<IVideoService, VideoService>();
 builder.Services.AddScoped<IVideoRepository, VideoRepository>();
+builder.Services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 
 //Dang ky ProblemDetails
 builder.Services.AddProblemDetails();
