@@ -53,5 +53,8 @@ namespace backend_video_sharing_platform.Domain.Entities
 
         [DynamoDBProperty("updatedAt")]
         public string UpdatedAt { get; set; } = string.Empty;
+
+        [DynamoDBProperty("commentCount")]
+        public int CommentCount { get; set; } = 0;
     }
 }
