@@ -107,7 +107,7 @@ builder.Services.AddScoped<ICommentRepository, CommentRepository>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<ICommentLikeRepository, CommentLikeRepository>();
 builder.Services.AddScoped<ICommentLikeService, CommentLikeService>();
-
+builder.Services.AddScoped<ISearchService, SearchService>();
 
 //Dang ky ProblemDetails
 builder.Services.AddProblemDetails();
