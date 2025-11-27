@@ -18,5 +18,7 @@ namespace backend_video_sharing_platform.Application.Interfaces
         Task<Video?> GetByIdAsync(string videoId, CancellationToken ct = default);
 
         Task DeleteAsync(string videoId);
+
+
     }
 }

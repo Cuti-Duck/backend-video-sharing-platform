@@ -102,5 +102,10 @@ namespace backend_video_sharing_platform.Application.Services
 
             _logger.LogInformation("videoCount decreased for channel {ChannelId}", channelId);
         }
+
+        public async Task<List<Channel>> GetAllChannelsAsync()
+        {
+            return await _channelRepository.GetAllChannelsAsync();
+        }
     }
 }
