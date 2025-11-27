@@ -101,6 +101,8 @@ builder.Services.AddScoped<IVideoService, VideoService>();
 builder.Services.AddScoped<IVideoRepository, VideoRepository>();
 builder.Services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+builder.Services.AddScoped<IVideoLikeRepository, VideoLikeRepository>();
+builder.Services.AddScoped<IVideoLikeService, VideoLikeService>();
 
 //Dang ky ProblemDetails
 builder.Services.AddProblemDetails();
