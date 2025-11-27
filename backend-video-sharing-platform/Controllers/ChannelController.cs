@@ -50,5 +50,12 @@ namespace backend_video_sharing_platform.API.Controllers
 
             return Ok(new { message = "Channel description updated successfully." });
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAllChannels()
+        {
+            var channels = await _channelService.GetAllChannelsAsync();
+            return Ok(channels);
+        }
     }
 }

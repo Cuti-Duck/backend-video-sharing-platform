@@ -1,4 +1,5 @@
 ﻿using backend_video_sharing_platform.Application.DTOs.Channel;
+using backend_video_sharing_platform.Domain.Entities;
 
 namespace backend_video_sharing_platform.Application.Interfaces
 {
@@ -8,5 +9,7 @@ namespace backend_video_sharing_platform.Application.Interfaces
         Task<ChannelResponse?> GetChannelByIdAsync(string channelId, CancellationToken ct = default);
         Task<bool> UpdateDescriptionAsync(string userId, string description, CancellationToken ct = default);
         Task DecreaseVideoCountAsync(string channelId);
+
+        Task<List<Channel>> GetAllChannelsAsync();
     }
 }

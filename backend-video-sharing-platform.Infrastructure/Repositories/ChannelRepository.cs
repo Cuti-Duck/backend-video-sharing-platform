@@ -36,5 +36,10 @@ namespace backend_video_sharing_platform.Infrastructure.Repositories
             return _db.LoadAsync<Channel>(channelId);  // LOAD BY HASH KEY
         }
 
+        public async Task<List<Channel>> GetAllChannelsAsync()
+        {
+            var conditions = new List<ScanCondition>();
+            return await _db.ScanAsync<Channel>(conditions).GetRemainingAsync();
+        }
     }
 }
