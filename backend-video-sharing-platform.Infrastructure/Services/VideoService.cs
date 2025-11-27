@@ -22,6 +22,7 @@ namespace backend_video_sharing_platform.Infrastructure.Services
         private readonly IStorageService _storageService;
         private readonly ILogger<VideoService> _logger;
         private readonly IChannelService _channelService;
+        private readonly IUserRepository _userRepo;
 
         public VideoService(
             IAmazonS3 s3,
@@ -30,7 +31,9 @@ namespace backend_video_sharing_platform.Infrastructure.Services
             IVideoRepository repo,
             IStorageService storageService,
             ILogger<VideoService> logger,
-            IChannelService channelService
+            IChannelService channelService,
+            IUserRepository userRepo
+
             )
         {
             _s3 = s3;
@@ -40,7 +43,8 @@ namespace backend_video_sharing_platform.Infrastructure.Services
             _storageService = storageService;
             _logger = logger;
             _channelService = channelService;
-         }
+            _userRepo = userRepo;
+        }
 
         public async Task DeleteVideoAsync(string videoId, string currentUserId)
         {
@@ -138,24 +142,56 @@ namespace backend_video_sharing_platform.Infrastructure.Services
         {
             var videos = await _repo.GetAllVideosAsync();
 
-            return videos.Select(v => new VideoResponseDto
+            if (videos == null || videos.Count == 0)
+                return new List<VideoResponseDto>();
+
+            // Lấy list userId
+            var userIds = videos
+                .Select(v => v.UserId)
+                .Where(id => !string.IsNullOrEmpty(id))
+                .Distinct()
+                .ToList();
+
+            // Load user info
+            var usersDict = new Dictionary<string, User>();
+
+            foreach (var userId in userIds)
             {
-                VideoId = v.VideoId,
-                ChannelId = v.ChannelId,
-                UserId = v.UserId,
-                Title = v.Title,
-                Description = v.Description,
-                PlaybackUrl = v.PlaybackUrl,
-                Key = v.Key,
-                Status = v.Status,
-                Duration = v.Duration,
-                ThumbnailUrl = v.ThumbnailUrl,
-                Type = v.Type,
-                ViewCount = v.ViewCount,
-                LikeCount = v.LikeCount,
-                CreatedAt = v.CreatedAt
+                var user = await _userRepo.GetByIdAsync(userId);
+                if (user != null)
+                    usersDict[userId] = user;
+            }
+
+            // Map video + user info
+            return videos.Select(v =>
+            {
+                usersDict.TryGetValue(v.UserId, out var user);
+
+                return new VideoResponseDto
+                {
+                    VideoId = v.VideoId,
+                    ChannelId = v.ChannelId,
+                    UserId = v.UserId,
+
+                    // NEW
+                    UserName = user?.Name ?? "",
+                    UserAvatarUrl = user?.AvatarUrl ?? "",
+
+                    Title = v.Title,
+                    Description = v.Description,
+                    PlaybackUrl = v.PlaybackUrl,
+                    Key = v.Key,
+                    Status = v.Status,
+                    Duration = v.Duration,
+                    ThumbnailUrl = v.ThumbnailUrl,
+                    Type = v.Type,
+                    ViewCount = v.ViewCount,
+                    LikeCount = v.LikeCount,
+                    CreatedAt = v.CreatedAt
+                };
             }).ToList();
         }
+
 
         public Task<Video?> GetVideoByIdAsync(string videoId)
             => _repo.GetByIdAsync(videoId);

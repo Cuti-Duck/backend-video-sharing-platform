@@ -16,5 +16,8 @@
         public long ViewCount { get; set; }
         public long LikeCount { get; set; }
         public string CreatedAt { get; set; }
+
+        public string UserName { get; set; } = string.Empty;
+        public string UserAvatarUrl { get; set; } = string.Empty;
     }
 }
