@@ -19,6 +19,12 @@ namespace backend_video_sharing_platform.Application.Interfaces
 
         Task DeleteAsync(string videoId);
 
+        Task<int> IncreaseViewCountAsync(string videoId);
+
+        Task<List<Video>> GetTrendingAsync(int limit = 20);
+
+
+
 
     }
 }

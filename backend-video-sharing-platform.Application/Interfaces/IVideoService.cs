@@ -29,5 +29,10 @@ namespace backend_video_sharing_platform.Application.Interfaces
 
         Task<Video> UpdateVideoAsync(string videoId, string userId, UpdateVideoRequest request);
 
+        Task<ViewCountResponse> IncreaseViewCountAsync(string videoId);
+        Task<ViewCountResponse> GetViewCountAsync(string videoId);
+        Task<List<TrendingVideoResponse>> GetTrendingAsync(int limit = 20);
+
+
     }
 }

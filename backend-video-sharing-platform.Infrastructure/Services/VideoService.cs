@@ -289,5 +289,58 @@ namespace backend_video_sharing_platform.Infrastructure.Services
 
             return video;
         }
+
+        public async Task<ViewCountResponse> IncreaseViewCountAsync(string videoId)
+        {
+            // atomic +1
+            var newCount = await _repo.IncreaseViewCountAsync(videoId);
+
+            return new ViewCountResponse
+            {
+                VideoId = videoId,
+                ViewCount = newCount
+            };
+        }
+
+        public async Task<ViewCountResponse> GetViewCountAsync(string videoId)
+        {
+            var video = await _repo.GetByIdAsync(videoId);
+
+            if (video == null)
+                throw new NotFoundException("Video not found.");
+
+            return new ViewCountResponse
+            {
+                VideoId = videoId,
+                ViewCount = (int)video.ViewCount
+            };
+        }
+
+        public async Task<List<TrendingVideoResponse>> GetTrendingAsync(int limit = 20)
+        {
+            var videos = await _repo.GetTrendingAsync(limit);
+
+            return videos.Select(v => new TrendingVideoResponse
+            {
+                VideoId = v.VideoId,
+                ChannelId = v.ChannelId,
+                CommentCount = v.CommentCount,
+                CreatedAt = v.CreatedAt,
+                Description = v.Description,
+                Duration = (int)v.Duration,
+                Key = v.Key,
+                LikeCount = (int)v.LikeCount,
+                PlaybackUrl = v.PlaybackUrl,
+                Status = v.Status,
+                ThumbnailUrl = v.ThumbnailUrl,
+                Title = v.Title,
+                Type = v.Type,
+                UpdatedAt = v.UpdatedAt,
+                UserId = v.UserId,
+                ViewCount = (int)v.ViewCount
+            }).ToList();
+        }
+
+
     }
 }
