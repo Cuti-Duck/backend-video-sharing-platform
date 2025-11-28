@@ -33,6 +33,10 @@ namespace backend_video_sharing_platform.Application.Interfaces
         Task<ViewCountResponse> GetViewCountAsync(string videoId);
         Task<List<TrendingVideoResponse>> GetTrendingAsync(int limit = 20);
 
+        // Thêm dòng này vào IVideoService.cs
+
+        Task NotifySubscribersAboutNewVideoAsync(string videoId);
+
 
     }
 }

@@ -18,5 +18,8 @@
         public string UpdatedAt { get; set; } = string.Empty;
         public string UserId { get; set; } = string.Empty;
         public int ViewCount { get; set; }
+
+        public string UserName { get; set; } = string.Empty;
+        public string UserAvatarUrl { get; set; } = string.Empty;
     }
 }
