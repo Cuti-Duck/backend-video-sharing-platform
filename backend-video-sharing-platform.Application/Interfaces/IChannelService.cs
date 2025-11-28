@@ -11,5 +11,6 @@ namespace backend_video_sharing_platform.Application.Interfaces
         Task DecreaseVideoCountAsync(string channelId);
 
         Task<List<Channel>> GetAllChannelsAsync();
+        Task UpdateChannelAvatarAsync(string userId, string avatarUrl);
     }
 }

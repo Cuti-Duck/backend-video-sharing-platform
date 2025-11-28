@@ -17,13 +17,15 @@ namespace backend_video_sharing_platform.Api.Controllers
         private readonly IVideoService _videoService;
         private readonly IMapper _mapper;
         private readonly ILogger<VideoController> _logger;
+        private readonly IConfiguration _config;
 
 
-        public VideoController(IVideoService videoService, IMapper mapper, ILogger<VideoController> logger)
+        public VideoController(IVideoService videoService, IMapper mapper, ILogger<VideoController> logger, IConfiguration config)
         {
             _videoService = videoService;
             _mapper = mapper;
             _logger = logger;
+            _config = config;
         }
 
         [HttpPost("create")]
@@ -157,6 +159,46 @@ namespace backend_video_sharing_platform.Api.Controllers
         {
             var result = await _videoService.GetTrendingAsync(limit);
             return Ok(result);
+        }
+
+        /// <summary>
+        /// Webhook endpoint để Lambda gọi sau khi process video xong
+        /// </summary>
+        [HttpPost("{videoId}/notify-subscribers")]
+        [AllowAnonymous] // Lambda không có JWT token
+        public async Task<IActionResult> NotifySubscribers(string videoId)
+        {
+            try
+            {
+                // Optional: Validate request từ Lambda (bằng API key hoặc signature)
+                var apiKey = Request.Headers["X-Api-Key"].FirstOrDefault();
+                var expectedApiKey = _config["Lambda:WebhookApiKey"]; // Lưu trong appsettings.json
+
+                if (string.IsNullOrEmpty(apiKey) || apiKey != expectedApiKey)
+                {
+                    _logger.LogWarning("Unauthorized webhook call for video {VideoId}", videoId);
+                    return Unauthorized(new { message = "Invalid API key" });
+                }
+
+                _logger.LogInformation("Received webhook notification for video {VideoId}", videoId);
+
+                await _videoService.NotifySubscribersAboutNewVideoAsync(videoId);
+
+                return Ok(new
+                {
+                    message = "Subscribers notified successfully",
+                    videoId = videoId
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing webhook for video {VideoId}", videoId);
+                return StatusCode(500, new
+                {
+                    message = "Error notifying subscribers",
+                    error = ex.Message
+                });
+            }
         }
     }
 }

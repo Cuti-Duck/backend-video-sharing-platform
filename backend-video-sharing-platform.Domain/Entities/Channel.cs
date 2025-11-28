@@ -44,5 +44,8 @@ namespace backend_video_sharing_platform.Domain.Entities
 
         [DynamoDBProperty("currentStreamId")]
         public string? CurrentStreamId { get; set; }
+
+        [DynamoDBProperty("avatarUrl")]
+        public string? AvatarUrl { get; set; }
     }
 }
