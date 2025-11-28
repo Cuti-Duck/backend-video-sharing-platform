@@ -1,7 +1,9 @@
 ﻿using backend_video_sharing_platform.Application.Common.Exceptions;
 using backend_video_sharing_platform.Application.DTOs.Comment;
+using backend_video_sharing_platform.Application.DTOs.Notification;
 using backend_video_sharing_platform.Application.Interfaces;
 using backend_video_sharing_platform.Domain.Entities;
+using backend_video_sharing_platform.Domain.Enums;
 using Microsoft.Extensions.Logging;
 
 namespace backend_video_sharing_platform.Application.Services
@@ -11,17 +13,20 @@ namespace backend_video_sharing_platform.Application.Services
         private readonly ICommentRepository _commentRepo;
         private readonly IVideoRepository _videoRepo;
         private readonly IUserRepository _userRepo;
+        private readonly INotificationService _notificationService; // ✅ NEW
         private readonly ILogger<CommentService> _logger;
 
         public CommentService(
             ICommentRepository commentRepo,
             IVideoRepository videoRepo,
             IUserRepository userRepo,
+            INotificationService notificationService, // ✅ NEW
             ILogger<CommentService> logger)
         {
             _commentRepo = commentRepo;
             _videoRepo = videoRepo;
             _userRepo = userRepo;
+            _notificationService = notificationService; // ✅ NEW
             _logger = logger;
         }
 
@@ -87,6 +92,56 @@ namespace backend_video_sharing_platform.Application.Services
 
             video.CommentCount++;
             await _videoRepo.SaveAsync(video);
+
+            // ✅ NEW: Create notifications
+            try
+            {
+                if (parentComment != null)
+                {
+                    // Reply to comment - notify comment owner
+                    if (parentComment.UserId != userId)
+                    {
+                        await _notificationService.CreateNotificationAsync(new CreateNotificationRequest
+                        {
+                            RecipientUserId = parentComment.UserId,
+                            ActorUserId = userId,
+                            Type = nameof(NotificationType.COMMENT_REPLIED),
+                            VideoId = videoId,
+                            CommentId = comment.CommentId
+                        });
+
+                        _logger.LogInformation(
+                            "Created COMMENT_REPLIED notification for user {RecipientId}",
+                            parentComment.UserId
+                        );
+                    }
+                }
+                else
+                {
+                    // Comment on video - notify video owner
+                    if (video.UserId != userId)
+                    {
+                        await _notificationService.CreateNotificationAsync(new CreateNotificationRequest
+                        {
+                            RecipientUserId = video.UserId,
+                            ActorUserId = userId,
+                            Type = nameof(NotificationType.VIDEO_COMMENTED),
+                            VideoId = videoId,
+                            CommentId = comment.CommentId
+                        });
+
+                        _logger.LogInformation(
+                            "Created VIDEO_COMMENTED notification for user {RecipientId}",
+                            video.UserId
+                        );
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Notification failure should not break the comment operation
+                _logger.LogError(ex, "Failed to create notification for comment");
+            }
 
             _logger.LogInformation(
                 "User {UserId} created comment {CommentId} on video {VideoId}",

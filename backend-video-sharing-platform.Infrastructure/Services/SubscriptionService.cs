@@ -73,7 +73,7 @@ namespace backend_video_sharing_platform.Application.Services
                     {
                         ChannelId = channel.ChannelId,
                         ChannelName = channel.Name,
-                        //AvatarUrl = channel.AvatarUrl,
+                        AvatarUrl = channel.AvatarUrl,
                         SubscriberCount = channel.SubscriberCount,
                         SubscribedAt = sub.CreatedAt
                     });

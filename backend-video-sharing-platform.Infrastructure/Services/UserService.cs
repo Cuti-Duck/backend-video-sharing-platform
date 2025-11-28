@@ -138,6 +138,17 @@ namespace backend_video_sharing_platform.Application.Services
 
             _logger.LogInformation("User {UserId} updated avatar successfully", userId);
 
+            try
+            {
+                await _channelService.UpdateChannelAvatarAsync(userId, url);
+                _logger.LogInformation("Channel avatar synced for user {UserId}", userId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to sync channel avatar for user {UserId}", userId);
+                // Don't throw - user avatar already uploaded successfully
+            }
+
             return new UploadAvatarResponse { AvatarUrl = url };
         }
     }

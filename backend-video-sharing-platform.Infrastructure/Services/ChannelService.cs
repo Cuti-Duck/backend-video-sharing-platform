@@ -54,11 +54,19 @@ namespace backend_video_sharing_platform.Application.Services
                 return new ChannelResponse
                 {
                     ChannelId = channel.ChannelId,
+                    UserId = channel.UserId,
                     Name = channel.Name,
                     Description = channel.Description,
                     SubscriberCount = channel.SubscriberCount,
                     VideoCount = channel.VideoCount,
-                    CreatedAt = channel.CreatedAt
+                    CreatedAt = channel.CreatedAt,
+                    ChannelArn = channel.ChannelArn,
+                    PlaybackUrl = channel.PlaybackUrl,
+                    IngestEndpoint = channel.IngestEndpoint,
+                    StreamKeyArn = channel.StreamKeyArn,
+                    IsLive = channel.IsLive,
+                    CurrentStreamId = channel.CurrentStreamId,
+                    AvatarUrl = channel.AvatarUrl
                 };
             }
             catch (Exception ex)
@@ -106,6 +114,26 @@ namespace backend_video_sharing_platform.Application.Services
         public async Task<List<Channel>> GetAllChannelsAsync()
         {
             return await _channelRepository.GetAllChannelsAsync();
+        }
+        public async Task UpdateChannelAvatarAsync(string userId, string avatarUrl)
+        {
+            // Load channel by channelId = userId
+            var channel = await _db.LoadAsync<Channel>(userId);
+
+            if (channel == null)
+            {
+                _logger.LogWarning("Channel not found for userId {UserId}", userId);
+                return;
+            }
+
+            // Update avatar URL
+            channel.AvatarUrl = avatarUrl;
+            await _db.SaveAsync(channel);
+
+            _logger.LogInformation(
+                "Channel {ChannelId} avatar updated to {AvatarUrl}",
+                userId, avatarUrl
+            );
         }
     }
 }
