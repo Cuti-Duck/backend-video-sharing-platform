@@ -76,5 +76,17 @@ namespace backend_video_sharing_platform.Application.Services
             };
         }
 
+        public async Task<CommentLikeStatusResponse> CheckLikedAsync(string commentId, string userId)
+        {
+            var existing = await _likeRepo.GetAsync(commentId, userId);
+
+            return new CommentLikeStatusResponse
+            {
+                CommentId = commentId,
+                Liked = existing != null
+            };
+        }
+
+
     }
 }
