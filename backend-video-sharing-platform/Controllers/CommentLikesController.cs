@@ -51,6 +51,23 @@ namespace backend_video_sharing_platform.API.Controllers
             var result = await _service.GetLikeCountAsync(commentId);
             return Ok(result);
         }
+
+        [HttpGet("/api/videos/{videoId}/comments/{commentId}/like/status")]
+        [Authorize]
+        public async Task<IActionResult> CheckLikeStatus(string videoId, string commentId)
+        {
+            var userId = User.FindFirst("sub")?.Value
+                      ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                      ?? User.FindFirst("user_id")?.Value
+                      ?? User.FindFirst("cognito:username")?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "User ID not found in token" });
+
+            var result = await _service.CheckLikedAsync(commentId, userId);
+            return Ok(result);
+        }
+
     }
 }
 

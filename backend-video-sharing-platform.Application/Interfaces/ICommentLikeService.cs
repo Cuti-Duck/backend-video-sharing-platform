@@ -6,5 +6,8 @@ namespace backend_video_sharing_platform.Application.Interfaces
     {
         Task<LikeCommentResponse> ToggleLikeAsync(string videoId, string commentId, string userId);
         Task<CommentLikeCountResponse> GetLikeCountAsync(string commentId);
+
+        Task<CommentLikeStatusResponse> CheckLikedAsync(string commentId, string userId);
+
     }
 }
