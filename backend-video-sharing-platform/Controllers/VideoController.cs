@@ -152,7 +152,11 @@ namespace backend_video_sharing_platform.Api.Controllers
             });
         }
 
-
-
+        [HttpGet("trending")]
+        public async Task<IActionResult> GetTrending([FromQuery] int limit = 20)
+        {
+            var result = await _videoService.GetTrendingAsync(limit);
+            return Ok(result);
+        }
     }
 }
