@@ -44,6 +44,7 @@
     /// <summary>
     /// DTO hiển thị notification cho client
     /// </summary>
+    // File: Application/DTOs/Notification/NotificationDto.cs
     public class NotificationDto
     {
         public string NotificationId { get; set; } = string.Empty;
@@ -53,6 +54,7 @@
         public string? ActorAvatarUrl { get; set; }
         public string? VideoId { get; set; }
         public string? VideoTitle { get; set; }
+        public string? VideoThumbnailUrl { get; set; } // ✅ NEW
         public string? CommentId { get; set; }
         public string Message { get; set; } = string.Empty;
         public bool IsRead { get; set; }
