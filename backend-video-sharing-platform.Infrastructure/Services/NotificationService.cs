@@ -43,7 +43,7 @@ namespace backend_video_sharing_platform.Application.Services
         /// </summary>
         public async Task<CreateNotificationResponse> CreateNotificationAsync(CreateNotificationRequest request)
         {
-            // 1. Validate: Không tự notify chính mình
+            // 1. Validate
             if (request.RecipientUserId == request.ActorUserId)
             {
                 return new CreateNotificationResponse
@@ -60,7 +60,7 @@ namespace backend_video_sharing_platform.Application.Services
                 throw new NotFoundException("Actor user not found");
             }
 
-            // 3. Get recipient info (để verify user tồn tại)
+            // 3. Get recipient info
             var recipient = await _userRepo.GetByIdAsync(request.RecipientUserId);
             if (recipient == null)
             {
@@ -70,12 +70,14 @@ namespace backend_video_sharing_platform.Application.Services
             // 4. Build notification message và get related data
             string message;
             string? videoTitle = null;
+            string? videoThumbnailUrl = null; // ✅ NEW
 
             switch (request.Type)
             {
                 case nameof(NotificationType.VIDEO_LIKED):
                     var video1 = await _videoRepo.GetByIdAsync(request.VideoId!);
                     videoTitle = video1?.Title;
+                    videoThumbnailUrl = video1?.ThumbnailUrl; // ✅ NEW
                     message = $"{actor.Name} liked your video";
                     if (!string.IsNullOrEmpty(videoTitle))
                         message += $" \"{videoTitle}\"";
@@ -84,6 +86,7 @@ namespace backend_video_sharing_platform.Application.Services
                 case nameof(NotificationType.VIDEO_COMMENTED):
                     var video2 = await _videoRepo.GetByIdAsync(request.VideoId!);
                     videoTitle = video2?.Title;
+                    videoThumbnailUrl = video2?.ThumbnailUrl; // ✅ NEW
                     message = $"{actor.Name} commented on your video";
                     if (!string.IsNullOrEmpty(videoTitle))
                         message += $" \"{videoTitle}\"";
@@ -91,15 +94,28 @@ namespace backend_video_sharing_platform.Application.Services
 
                 case nameof(NotificationType.COMMENT_LIKED):
                     message = $"{actor.Name} liked your comment";
+                    // ✅ NEW: Load video thumbnail for comment notifications
+                    if (!string.IsNullOrEmpty(request.VideoId))
+                    {
+                        var videoForComment = await _videoRepo.GetByIdAsync(request.VideoId);
+                        videoThumbnailUrl = videoForComment?.ThumbnailUrl;
+                    }
                     break;
 
                 case nameof(NotificationType.COMMENT_REPLIED):
                     message = $"{actor.Name} replied to your comment";
+                    // ✅ NEW: Load video thumbnail for reply notifications
+                    if (!string.IsNullOrEmpty(request.VideoId))
+                    {
+                        var videoForReply = await _videoRepo.GetByIdAsync(request.VideoId);
+                        videoThumbnailUrl = videoForReply?.ThumbnailUrl;
+                    }
                     break;
 
                 case nameof(NotificationType.NEW_VIDEO_UPLOADED):
                     var video3 = await _videoRepo.GetByIdAsync(request.VideoId!);
                     videoTitle = video3?.Title;
+                    videoThumbnailUrl = video3?.ThumbnailUrl; // ✅ NEW
                     message = $"{actor.Name} uploaded a new video";
                     if (!string.IsNullOrEmpty(videoTitle))
                         message += $": \"{videoTitle}\"";
@@ -116,17 +132,18 @@ namespace backend_video_sharing_platform.Application.Services
             {
                 RecipientUserId = request.RecipientUserId,
                 NotificationId = Guid.NewGuid().ToString(),
-                CreatedAt = now.ToString("o"), // ISO 8601 format
+                CreatedAt = now.ToString("o"),
                 Type = request.Type,
                 ActorUserId = request.ActorUserId,
                 ActorName = actor.Name,
                 ActorAvatarUrl = actor.AvatarUrl,
                 VideoId = request.VideoId,
                 VideoTitle = videoTitle,
+                VideoThumbnailUrl = videoThumbnailUrl, // ✅ NEW
                 CommentId = request.CommentId,
                 Message = message,
                 IsRead = "false",
-                Ttl = new DateTimeOffset(now.AddDays(30)).ToUnixTimeSeconds() // Auto-delete after 30 days
+                Ttl = new DateTimeOffset(now.AddDays(30)).ToUnixTimeSeconds()
             };
 
             // 6. Save to database
@@ -152,7 +169,8 @@ namespace backend_video_sharing_platform.Application.Services
         /// </summary>
         public async Task NotifySubscribersAsync(string channelId, string videoId)
         {
-            // 1. Get channel info
+            // 1-4. [Giữ nguyên code cũ...]
+
             var channel = await _channelRepo.GetByIdAsync(channelId);
             if (channel == null)
             {
@@ -160,7 +178,6 @@ namespace backend_video_sharing_platform.Application.Services
                 return;
             }
 
-            // 2. Get video info
             var video = await _videoRepo.GetByIdAsync(videoId);
             if (video == null)
             {
@@ -168,16 +185,13 @@ namespace backend_video_sharing_platform.Application.Services
                 return;
             }
 
-            // 3. Get all subscribers
             var subscriptions = await _subscriptionRepo.GetChannelSubscribersAsync(channelId);
-
             if (subscriptions.Count == 0)
             {
                 _logger.LogInformation("Channel {ChannelId} has no subscribers", channelId);
                 return;
             }
 
-            // 4. Get channel owner (actor)
             var channelOwner = await _userRepo.GetByIdAsync(channel.UserId);
             if (channelOwner == null)
             {
@@ -191,7 +205,6 @@ namespace backend_video_sharing_platform.Application.Services
 
             foreach (var subscription in subscriptions)
             {
-                // Skip nếu subscriber là chính channel owner (edge case)
                 if (subscription.UserId == channel.UserId)
                     continue;
 
@@ -206,6 +219,7 @@ namespace backend_video_sharing_platform.Application.Services
                     ActorAvatarUrl = channelOwner.AvatarUrl,
                     VideoId = videoId,
                     VideoTitle = video.Title,
+                    VideoThumbnailUrl = video.ThumbnailUrl, // ✅ NEW
                     Message = $"{channelOwner.Name} uploaded a new video: \"{video.Title}\"",
                     IsRead = "false",
                     Ttl = new DateTimeOffset(now.AddDays(30)).ToUnixTimeSeconds()
@@ -214,11 +228,10 @@ namespace backend_video_sharing_platform.Application.Services
                 notifications.Add(notification);
             }
 
-            // 6. Batch save all notifications
+            // 6. Batch save
             if (notifications.Count > 0)
             {
                 await _notificationRepo.BatchSaveAsync(notifications);
-
                 _logger.LogInformation(
                     "Notified {Count} subscribers about new video {VideoId} from channel {ChannelId}",
                     notifications.Count,
@@ -232,10 +245,10 @@ namespace backend_video_sharing_platform.Application.Services
         /// Lấy notifications của user
         /// </summary>
         public async Task<GetNotificationsResponse> GetUserNotificationsAsync(
-            string userId,
-            bool unreadOnly = false,
-            int limit = 20,
-            string? cursor = null)
+    string userId,
+    bool unreadOnly = false,
+    int limit = 20,
+    string? cursor = null)
         {
             // Validate limit
             if (limit < 1) limit = 20;
@@ -246,12 +259,10 @@ namespace backend_video_sharing_platform.Application.Services
 
             if (unreadOnly)
             {
-                // Sử dụng GSI để query unread notifications
                 notifications = await _notificationRepo.GetUnreadNotificationsAsync(userId, limit);
             }
             else
             {
-                // Parse cursor (if provided)
                 Dictionary<string, AttributeValue>? lastEvaluatedKey = null;
                 if (!string.IsNullOrEmpty(cursor))
                 {
@@ -265,13 +276,11 @@ namespace backend_video_sharing_platform.Application.Services
                     }
                 }
 
-                // Query all notifications with pagination
                 var result = await _notificationRepo.GetUserNotificationsAsync(userId, limit, lastEvaluatedKey);
                 notifications = result.Items;
                 lastKey = result.LastKey;
             }
 
-            // Count unread
             var unreadCount = await _notificationRepo.CountUnreadNotificationsAsync(userId);
 
             // Map to DTOs
@@ -284,6 +293,7 @@ namespace backend_video_sharing_platform.Application.Services
                 ActorAvatarUrl = n.ActorAvatarUrl,
                 VideoId = n.VideoId,
                 VideoTitle = n.VideoTitle,
+                VideoThumbnailUrl = n.VideoThumbnailUrl, // ✅ NEW
                 CommentId = n.CommentId,
                 Message = n.Message,
                 IsRead = n.IsRead == "true",
