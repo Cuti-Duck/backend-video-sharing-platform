@@ -248,6 +248,7 @@ namespace backend_video_sharing_platform.Infrastructure.Repositories
                 ActorAvatarUrl = item.ContainsKey("actorAvatarUrl") ? item["actorAvatarUrl"].S : null,
                 VideoId = item.ContainsKey("videoId") ? item["videoId"].S : null,
                 VideoTitle = item.ContainsKey("videoTitle") ? item["videoTitle"].S : null,
+                VideoThumbnailUrl = item.ContainsKey("videoThumbnailUrl") ? item["videoThumbnailUrl"].S : null, // ✅ NEW
                 CommentId = item.ContainsKey("commentId") ? item["commentId"].S : null,
                 Message = item.ContainsKey("message") ? item["message"].S : string.Empty,
                 IsRead = item.ContainsKey("isRead") ? item["isRead"].S : "false",
